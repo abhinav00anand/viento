@@ -18,7 +18,7 @@ Run as a node:
 Documentation: https://github.com/abhinav00anand/zephyr
 """
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 __author__ = "Zephyr Cloud Team"
 __email__ = "indrohelpdesk@gmail.com"
 __license__ = "MIT"
