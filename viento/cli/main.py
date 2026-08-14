@@ -191,7 +191,7 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
                     await asyncio.sleep(1.0)
         except (KeyboardInterrupt, asyncio.CancelledError):
             console.print("\n[bold yellow]Shutting down runtime node...[/bold yellow]")
-            await scheduler.drain()
+            await scheduler.stop()
             await conn_mgr.stop()
             connection_task.cancel()
             console.print("[bold green]Runtime stopped cleanly.[/bold green]")
