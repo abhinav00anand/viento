@@ -211,6 +211,10 @@ class TelemetryCollector:
             gpus=gpus,
         )
 
+    def get_hardware_snapshot(self) -> HardwareStats:
+        """Returns HardwareStats data class snapshot. Alias for get_hardware_stats."""
+        return self.get_hardware_stats()
+
     def increment_request(self, model: str, status: str = "success") -> None:
         """Increments request counter for model and status."""
         if model not in self._request_counters:
