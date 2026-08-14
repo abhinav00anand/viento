@@ -70,7 +70,7 @@ pip install -e ".[dev]"
 viento run
 ```
 
-Boots the runtime, connects to `wss://zephyr-i2ho.onrender.com/ws/runtime`, performs the HELLO→WELCOME→REGISTER→SESSION_READY handshake, and begins receiving jobs. On success, your terminal displays:
+Boots the runtime, connects to `wss://viento.onrender.com/ws/runtime`, performs the HELLO→WELCOME→REGISTER→SESSION_READY handshake, and begins receiving jobs. On success, your terminal displays:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -109,7 +109,7 @@ Boots the runtime, connects to `wss://zephyr-i2ho.onrender.com/ws/runtime`, perf
 from viento.client.client import VientoClient
 
 client = VientoClient(
-    base_url="https://zephyr-i2ho.onrender.com",
+    base_url="https://viento.onrender.com",
     api_key="zph_tmp_your_session_key",
 )
 
