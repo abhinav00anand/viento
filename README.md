@@ -22,7 +22,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-47%20passed-brightgreen?style=flat-square)](tests/)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
-[![GitHub Stars](https://img.shields.io/github/stars/ZephyrCloud-AI/viento?style=flat-square)](https://github.com/ZephyrCloud-AI/viento)
+[![GitHub Stars](https://img.shields.io/github/stars/abhinav00anand/zephyr?style=flat-square)](https://github.com/abhinav00anand/zephyr)
 
 </div>
 
@@ -30,7 +30,7 @@
 
 ## ⚡ What is Zephyr?
 
-**Zephyr** is a production-grade distributed inference runtime. It lets you take your local GPU/CPU machine running [Ollama](https://ollama.ai), [llama.cpp](https://github.com/ggerganov/llama.cpp), or [vLLM](https://github.com/vllm-project/vllm) and plug it into the Zephyr Cloud mesh — instantly turning it into a globally-addressable AI inference node.
+**Zephyr** is a robust, lightweight distributed inference runtime. It lets you take your local GPU/CPU machine running [Ollama](https://ollama.ai), [llama.cpp](https://github.com/ggerganov/llama.cpp), or [vLLM](https://github.com/vllm-project/vllm) and plug it into the Zephyr Cloud mesh — instantly turning it into a globally-addressable AI inference node.
 
 Once connected, any client with a session key can hit your node through the standard **OpenAI-compatible API** (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`) — from anywhere on the internet.
 
@@ -53,7 +53,7 @@ pip install viento
 Or install from source for the latest unreleased features:
 
 ```bash
-git clone https://github.com/ZephyrCloud-AI/viento.git
+git clone https://github.com/abhinav00anand/zephyr.git
 cd viento/SDK
 pip install -e ".[dev]"
 ```
@@ -335,6 +335,6 @@ MIT License © 2026 Zephyr Cloud Team. See [LICENSE](../LICENSE) for details.
 
 Made with ⚡ by the Zephyr Cloud team.
 
-[⭐ Star us on GitHub](https://github.com/ZephyrCloud-AI/viento) · [📦 PyPI Package](https://pypi.org/project/viento/) · [🐛 Report a Bug](https://github.com/ZephyrCloud-AI/viento/issues)
+[⭐ Star us on GitHub](https://github.com/abhinav00anand/zephyr) · [📦 PyPI Package](https://pypi.org/project/viento/) · [🐛 Report a Bug](https://github.com/abhinav00anand/zephyr/issues)
 
 </div>
