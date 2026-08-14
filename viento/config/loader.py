@@ -55,6 +55,9 @@ class RuntimeState:
     active_key: Optional[str] = None
     key_expires_at: Optional[float] = None
     registered_models: List[str] = field(default_factory=list)
+    status: Optional[str] = None
+    uptime_start: Optional[float] = None
+    last_heartbeat: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
@@ -127,6 +130,16 @@ class ConfigManager:
                 json.dump(state.to_dict(), f, indent=2)
         except Exception as exc:
             logger.error("Failed to save runtime state: %s", exc)
+
+    def update_runtime_state(self, **kwargs) -> None:
+        """Load the runtime state from disk, update specified fields, and save back to disk."""
+        state = self.load_runtime_state()
+        for k, v in kwargs.items():
+            if k == "active_api_key":
+                state.active_key = v
+            elif hasattr(state, k):
+                setattr(state, k, v)
+        self.save_runtime_state(state)
 
     def get_bootstrap_key(self) -> str:
         """Get bootstrap key strictly from environment variable."""
