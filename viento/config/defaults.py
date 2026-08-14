@@ -21,8 +21,8 @@ logger = logging.getLogger("zephyr.config.defaults")
 
 DEFAULT_CONFIG: Dict[str, Any] = {
     # Cloud Gateway
-    "server_url": "wss://zephyr.onrender.com/ws/runtime",
-    "http_url": "https://zephyr.onrender.com",
+    "server_url": "wss://viento.onrender.com/ws/runtime",
+    "http_url": "https://viento.onrender.com",
 
     # Local Backend
     "ollama_url": "http://localhost:11434",
