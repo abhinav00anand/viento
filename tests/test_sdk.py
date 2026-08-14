@@ -18,7 +18,7 @@ def test_config_defaults_and_serialization(tmp_path):
     cm = ConfigManager(base_dir=tmp_path)
     cfg = cm.load_config()
 
-    assert cfg.server_url == "wss://zephyr.onrender.com/ws/runtime"
+    assert cfg.server_url == "wss://viento.onrender.com/ws/runtime"
     assert cfg.model_backend == "ollama"
     
     # Secret non-persistence assertion
@@ -174,7 +174,7 @@ async def test_scheduler_stop_purges_queue_and_drains_tasks():
 
 
 def test_client_headers_and_init():
-    client = VientoClient(base_url="https://zephyr.onrender.com", api_key="zph_tmp_123")
+    client = VientoClient(base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123")
     assert client.api_key == "zph_tmp_123"
     headers = client._headers()
     assert "Authorization" in headers
@@ -182,7 +182,7 @@ def test_client_headers_and_init():
 
 
 def test_async_client_headers_and_init():
-    async_client = AsyncVientoClient(base_url="https://zephyr.onrender.com", api_key="zph_tmp_123")
+    async_client = AsyncVientoClient(base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123")
     assert async_client.api_key == "zph_tmp_123"
     headers = async_client._headers()
     assert "Authorization" in headers
