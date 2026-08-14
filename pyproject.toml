@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "viento"
-version = "0.2.8"
+version = "0.2.9"
 description = "Viento: Distributed AI inference runtime SDK — connect your local LLMs to the cloud mesh"
 readme = "README.md"
 license = { text = "MIT" }
