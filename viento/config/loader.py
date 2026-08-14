@@ -24,8 +24,8 @@ logger = logging.getLogger("zephyr.config")
 
 @dataclass
 class ZephyrConfig:
-    server_url: str = "wss://zephyr.onrender.com/ws/runtime"
-    cloud_api_url: str = "https://zephyr.onrender.com"
+    server_url: str = "wss://viento.onrender.com/ws/runtime"
+    cloud_api_url: str = "https://viento.onrender.com"
     model_backend: str = "ollama"
     ollama_url: str = "http://localhost:11434"
     vllm_url: str = "http://localhost:8000/v1"
