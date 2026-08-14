@@ -26,13 +26,24 @@ logger = logging.getLogger("zephyr.config")
 class ZephyrConfig:
     server_url: str = "wss://viento.onrender.com/ws/runtime"
     cloud_api_url: str = "https://viento.onrender.com"
+    http_url: str = "https://viento.onrender.com"
     model_backend: str = "ollama"
     ollama_url: str = "http://localhost:11434"
     vllm_url: str = "http://localhost:8000/v1"
     llamacpp_url: str = "http://localhost:8080"
+    node_name: str = "zephyr-node"
+    bootstrap_key: str = ""
     max_concurrency: int = 2
     max_queue_depth: int = 50
     heartbeat_interval: float = 15.0
+    heartbeat_deadline: float = 45.0
+    job_timeout: float = 120.0
+    token_ttl: float = 3600.0
+    log_level: str = "INFO"
+    log_json: bool = False
+    reconnect_base_delay: float = 1.0
+    reconnect_max_delay: float = 30.0
+    reconnect_jitter_factor: float = 0.2
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ZephyrConfig":
