@@ -41,6 +41,50 @@ class HardwareStats:
     gpus: Optional[List[GPUStat]] = None
 
 
+@dataclass
+class TelemetrySnapshot:
+    """A point-in-time snapshot of telemetry metrics."""
+    active_jobs_count: int
+    hardware: HardwareStats
+    requests: Dict[str, Dict[str, int]]
+    latencies: Dict[str, Any]
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert snapshot to dictionary format."""
+        from dataclasses import asdict
+        gpu_list = []
+        if self.hardware.gpus:
+            for g in self.hardware.gpus:
+                gpu_list.append({
+                    "index": g.index,
+                    "name": g.name,
+                    "gpu_util_percent": g.gpu_util_percent,
+                    "memory_used_mb": g.memory_used_mb,
+                    "memory_total_mb": g.memory_total_mb,
+                    "memory_percent": g.memory_percent,
+                    "temperature_c": g.temperature_c,
+                    "power_draw_w": g.power_draw_w,
+                })
+        return {
+            "timestamp": self.hardware.timestamp,
+            "hardware": {
+                "cpu": {
+                    "percent": self.hardware.cpu_percent,
+                    "logical_cores": self.hardware.cpu_count_logical,
+                    "physical_cores": self.hardware.cpu_count_physical,
+                },
+                "ram": {
+                    "total_bytes": self.hardware.memory_total_bytes,
+                    "used_bytes": self.hardware.memory_used_bytes,
+                    "percent": self.hardware.memory_percent,
+                },
+                "gpus": gpu_list,
+            },
+            "requests": self.requests,
+            "latencies": self.latencies,
+        }
+
+
 class LatencyHistogram:
     """Thread-safe latency tracker calculating min, max, average, and p50/p90/p99 percentiles."""
 
@@ -229,43 +273,19 @@ class TelemetryCollector:
             self._latency_histograms[operation] = LatencyHistogram()
         self._latency_histograms[operation].record(latency_ms)
 
-    def get_metrics_snapshot(self) -> Dict[str, Any]:
-        """Produces a JSON-serializable snapshot of hardware metrics, request counters, and latencies."""
+    def collect_snapshot(self) -> TelemetrySnapshot:
+        """Returns a snapshot of the current telemetry stats."""
         hw = self.get_hardware_stats()
-
-        gpu_list = []
-        if hw.gpus:
-            for g in hw.gpus:
-                gpu_list.append({
-                    "index": g.index,
-                    "name": g.name,
-                    "gpu_util_percent": g.gpu_util_percent,
-                    "memory_used_mb": g.memory_used_mb,
-                    "memory_total_mb": g.memory_total_mb,
-                    "memory_percent": g.memory_percent,
-                    "temperature_c": g.temperature_c,
-                    "power_draw_w": g.power_draw_w,
-                })
-
         latencies = {
             op: hist.summary() for op, hist in self._latency_histograms.items()
         }
+        return TelemetrySnapshot(
+            active_jobs_count=0,
+            hardware=hw,
+            requests=self._request_counters,
+            latencies=latencies,
+        )
 
-        return {
-            "timestamp": hw.timestamp,
-            "hardware": {
-                "cpu": {
-                    "percent": hw.cpu_percent,
-                    "logical_cores": hw.cpu_count_logical,
-                    "physical_cores": hw.cpu_count_physical,
-                },
-                "ram": {
-                    "total_bytes": hw.memory_total_bytes,
-                    "used_bytes": hw.memory_used_bytes,
-                    "percent": hw.memory_percent,
-                },
-                "gpus": gpu_list,
-            },
-            "requests": self._request_counters,
-            "latencies": latencies,
-        }
+    def get_metrics_snapshot(self) -> Dict[str, Any]:
+        """Produces a JSON-serializable snapshot of hardware metrics, request counters, and latencies."""
+        return self.collect_snapshot().to_dict()
