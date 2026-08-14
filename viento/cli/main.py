@@ -157,7 +157,12 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
     )
 
     conn_mgr = ConnectionManager(config=cfg, config_manager=config_mgr, backend=backend)
-    scheduler = JobScheduler(connection_manager=conn_mgr, config=cfg, config_manager=config_mgr, backend=backend)
+    scheduler = JobScheduler(
+        backend=backend,
+        connection_manager=conn_mgr,
+        max_concurrency=cfg.max_concurrency,
+        max_queue_depth=cfg.max_queue_depth,
+    )
 
     # Attach event handlers
     def on_handshake(api_key: str, session_id: str, ttl: float):
