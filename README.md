@@ -37,7 +37,7 @@ Once connected, any client with a session key can hit your node through the stan
 ```
 Your Machine (GPU/CPU)          Zephyr Cloud Gateway          Your Users
 ────────────────────           ────────────────────          ────────────
- Ollama llama3:latest   ◄─WSS─►  zephyr.onrender.com  ◄─HTTPS─►  API Clients
+ Ollama llama3:latest   ◄─WSS─►  zephyr-i2ho.onrender.com  ◄─HTTPS─►  API Clients
  llama.cpp phi3          secure    job routing &          OpenAI-compatible
  vLLM mistral           tunnel    load balancing          SDK / curl / apps
 ```
@@ -70,7 +70,7 @@ pip install -e ".[dev]"
 viento run
 ```
 
-Boots the runtime, connects to `wss://zephyr.onrender.com/ws/runtime`, performs the HELLO→WELCOME→REGISTER→SESSION_READY handshake, and begins receiving jobs. On success, your terminal displays:
+Boots the runtime, connects to `wss://zephyr-i2ho.onrender.com/ws/runtime`, performs the HELLO→WELCOME→REGISTER→SESSION_READY handshake, and begins receiving jobs. On success, your terminal displays:
 
 ```
 ╔══════════════════════════════════════════════════════════════╗
@@ -109,7 +109,7 @@ Boots the runtime, connects to `wss://zephyr.onrender.com/ws/runtime`, performs 
 from viento.client.client import VientoClient
 
 client = VientoClient(
-    base_url="https://zephyr.onrender.com",
+    base_url="https://zephyr-i2ho.onrender.com",
     api_key="zph_tmp_your_session_key",
 )
 
@@ -175,7 +175,7 @@ for i, embedding in enumerate(result.data):
 ```
                     ┌─────────────────────────────────────────┐
                     │           Zephyr Cloud Gateway          │
-                    │     wss://zephyr.onrender.com           │
+                    │     wss://zephyr-i2ho.onrender.com           │
                     │                                         │
                     │  ┌──────────┐  ┌──────────────────────┐ │
                     │  │  API GW  │  │  RuntimeManager      │ │
