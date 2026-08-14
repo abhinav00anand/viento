@@ -234,14 +234,28 @@ class ConnectionManager:
 
             # 2. Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
+            
+            # Extract GPU stats if present
+            gpu_name = "CPU"
+            vram_total_mb = 0
+            vram_used_mb = 0
+            device_count = 0
+            
+            if hw_snap.gpus:
+                first_gpu = hw_snap.gpus[0]
+                gpu_name = first_gpu.name
+                vram_total_mb = int(first_gpu.memory_total_mb)
+                vram_used_mb = int(first_gpu.memory_used_mb)
+                device_count = len(hw_snap.gpus)
+            
             hardware = HardwareSpecs(
-                cpu_count=hw_snap.cpu_count,
-                ram_total_mb=int(hw_snap.ram_total_bytes / (1024**2)),
-                ram_used_mb=int(hw_snap.ram_used_bytes / (1024**2)),
-                gpu_name=hw_snap.gpu_name or "CPU",
-                vram_total_mb=int(hw_snap.vram_total_bytes / (1024**2)),
-                vram_used_mb=int(hw_snap.vram_used_bytes / (1024**2)),
-                device_count=hw_snap.device_count,
+                cpu_count=hw_snap.cpu_count_logical,
+                ram_total_mb=int(hw_snap.memory_total_bytes / (1024**2)),
+                ram_used_mb=int(hw_snap.memory_used_bytes / (1024**2)),
+                gpu_name=gpu_name,
+                vram_total_mb=vram_total_mb,
+                vram_used_mb=vram_used_mb,
+                device_count=device_count,
                 max_sequence_length=4096,
             )
 
