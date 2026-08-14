@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "viento"
-version = "0.2.1"
+version = "0.2.2"
 description = "Viento: Distributed AI inference runtime SDK — connect your local LLMs to the cloud mesh"
 readme = "README.md"
 license = { text = "MIT" }
@@ -67,11 +67,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ZephyrCloud-AI/viento"
-Documentation = "https://github.com/ZephyrCloud-AI/viento/tree/main/docs"
-Repository = "https://github.com/ZephyrCloud-AI/viento"
-"Bug Tracker" = "https://github.com/ZephyrCloud-AI/viento/issues"
-Changelog = "https://github.com/ZephyrCloud-AI/viento/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/abhinav00anand/zephyr"
+Documentation = "https://github.com/abhinav00anand/zephyr/tree/main/docs"
+Repository = "https://github.com/abhinav00anand/zephyr"
+"Bug Tracker" = "https://github.com/abhinav00anand/zephyr/issues"
+Changelog = "https://github.com/abhinav00anand/zephyr/blob/main/CHANGELOG.md"
 
 [project.scripts]
 viento = "viento.cli.main:cli"
