@@ -77,7 +77,7 @@ class ConnectionManager:
         self.expected_incoming_sequence: int = 0
 
         self._heartbeat_task: Optional[asyncio.Task] = None
-        self._shutdown_event = asyncio.Event()
+        self._shutdown_event: Optional[asyncio.Event] = None
 
         # Event Callbacks
         self.on_handshake_callback: Optional[Callable[[str, str, float], None]] = None
@@ -99,6 +99,8 @@ class ConnectionManager:
 
     async def start(self) -> None:
         self.is_running = True
+        # BUG-15 FIX: Lazily create asyncio.Event inside running event loop to avoid Python 3.9/3.10 issues
+        self._shutdown_event = asyncio.Event()
         self._shutdown_event.clear()
 
         models = await self.discover_local_models()
@@ -117,7 +119,13 @@ class ConnectionManager:
                 if websockets is None:
                     raise RuntimeError("websockets library is required.")
 
-                async with websockets.connect(self.config.server_url, max_size=5_242_880) as ws:
+                async with websockets.connect(
+                    self.config.server_url,
+                    max_size=5_242_880,
+                    ping_interval=20,
+                    ping_timeout=20,
+                    close_timeout=10,
+                ) as ws:
                     self.ws = ws
                     self.is_connected = True
                     self.next_outgoing_sequence = 0
@@ -143,7 +151,7 @@ class ConnectionManager:
                 logger.warning(f"WebSocket connection error: {e}")
                 self.config_manager.update_runtime_state(status="reconnecting")
 
-            if self.is_running and not self._shutdown_event.is_set():
+            if self.is_running and not (self._shutdown_event and self._shutdown_event.is_set()):
                 jitter = random.uniform(-0.2, 0.2) * backoff
                 sleep_time = min(max_backoff, backoff + jitter)
                 logger.info(f"Retrying connection in {sleep_time:.2f}s...")
@@ -461,11 +469,14 @@ class ConnectionManager:
         await self.send_envelope(envelope)
 
     async def send_job_error(
-        self, job_id: str, error: str, request_id: Optional[str] = None
+        self, job_id: str, error_message: str = "", error_code: str = "runtime_error",
+        request_id: Optional[str] = None, error: Optional[str] = None,
     ) -> None:
+        # Support both `error` (legacy) and `error_message` (canonical) keyword args
+        msg = error_message or error or "Unknown runtime error"
         payload = JobErrorPayload(
-            error_message=error,
-            error_code="runtime_error",
+            error_message=msg,
+            error_code=error_code,
         )
         envelope = ProtocolEnvelope(
             type=FrameType.JOB_ERROR,
@@ -478,7 +489,8 @@ class ConnectionManager:
     async def stop(self) -> None:
         logger.info("Stopping ConnectionManager...")
         self.is_running = False
-        self._shutdown_event.set()
+        if self._shutdown_event is not None:
+            self._shutdown_event.set()
 
         if self.ws and self.is_connected:
             try:
