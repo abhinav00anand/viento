@@ -43,9 +43,9 @@ config_mgr = ConfigManager()
 
 
 @click.group()
-@click.version_option(version="0.1.0-beta", prog_name="zephyr")
+@click.version_option(package_name="viento", prog_name="viento")
 def cli():
-    """Zephyr Cloud CLI - Distributed AI Mesh Network Runtime & SDK."""
+    """Viento CLI - Distributed AI Mesh Network Runtime & SDK."""
     pass
 
 
@@ -131,7 +131,8 @@ def logs_command(lines: int):
 @click.option("--ollama-url", "-o", type=str, help="Override local Ollama API URL.")
 @click.option("--concurrency", "-c", type=int, help="Override maximum job concurrency.")
 @click.option("--bootstrap-key", "-k", type=str, help="Runtime bootstrap authentication key.")
-def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: Optional[int], bootstrap_key: Optional[str]):
+@click.option("--name", "--node-name", type=str, default=None, help="Override node name (default: machine-unique ID).")
+def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: Optional[int], bootstrap_key: Optional[str], name: Optional[str]):
     """Boot local runtime, connect to WSS gateway, perform handshake, and process jobs."""
     cfg = config_mgr.load_config()
     if server:
@@ -142,6 +143,9 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
         cfg.max_concurrency = concurrency
     if bootstrap_key:
         cfg.bootstrap_key = bootstrap_key
+    # BUG-17 FIX: Allow user to override node name from CLI
+    if name:
+        cfg.node_name = name
 
     backend = get_backend_adapter(cfg.model_backend, base_url=cfg.ollama_url)
 
@@ -151,7 +155,8 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
             f"[dim]Server Gateway:[/dim] [yellow]{cfg.server_url}[/yellow]\n"
             f"[dim]Backend Adapter:[/dim] [green]{backend.name()}[/green]\n"
             f"[dim]Engine Endpoint:[/dim] [yellow]{cfg.ollama_url}[/yellow]\n"
-            f"[dim]Max Concurrency:[/dim] [green]{cfg.max_concurrency}[/green]",
+            f"[dim]Max Concurrency:[/dim] [green]{cfg.max_concurrency}[/green]\n"
+            f"[dim]Node Name:[/dim] [green]{cfg.node_name}[/green]",
             border_style="cyan",
         )
     )
@@ -178,8 +183,9 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
 
     conn_mgr.on_handshake_callback = on_handshake
     conn_mgr.on_job_received_callback = lambda envelope: asyncio.create_task(scheduler.submit_job(envelope))
-    conn_mgr.on_embedding_received_callback = lambda envelope: asyncio.create_task(scheduler.submit_embedding_job(envelope))
-    conn_mgr.on_job_cancel_callback = lambda job_id: asyncio.create_task(scheduler.cancel_job(job_id))
+    conn_mgr.on_embedding_received_callback = lambda envelope: asyncio.create_task(scheduler.submit_job(envelope))
+    # BUG-5 FIX: cancel_job is SYNC not async — do not wrap in asyncio.create_task
+    conn_mgr.on_job_cancel_callback = scheduler.cancel_job
 
     async def main_loop():
         await scheduler.start()
