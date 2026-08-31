@@ -10,14 +10,14 @@ import asyncio
 import logging
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 from viento.backends.base import (
     EmbeddingResult,
     ExecutionHandle,
     GenerationChunk,
-    GenerationResult,
     InferenceBackend,
 )
 
@@ -104,7 +104,7 @@ class JobScheduler:
                 break
 
         # Mark all jobs CANCELLED (if queued) or CANCEL_REQUESTED (if running)
-        for job_id, job in list(self._jobs.items()):
+        for job in list(self._jobs.values()):
             if job.status == JobStatus.QUEUED:
                 job.status = JobStatus.CANCELLED
             else:
