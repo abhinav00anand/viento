@@ -2,18 +2,12 @@
 
 import json
 from unittest.mock import MagicMock, patch
+
 import httpx
 import pytest
 
-from viento.backends.base import (
-    BackendError,
-    BackendOfflineError,
-    ContextOverflowError,
-    ModelNotFoundError,
-)
 from viento.backends.llamacpp import LlamaCppAdapter
 from viento.backends.vllm import VLLMAdapter
-
 
 # --- llama.cpp Tests ---
 
@@ -65,7 +59,7 @@ def test_llamacpp_generate_streaming(llamacpp_adapter):
     def cb(chunk):
         received.append(chunk.delta)
 
-    with patch.object(llamacpp_adapter._client, "build_request") as mock_req, \
+    with patch.object(llamacpp_adapter._client, "build_request"), \
          patch.object(llamacpp_adapter._client, "send", return_value=mock_resp):
         result, handle = llamacpp_adapter.generate(
             job_id="job_1",
@@ -121,7 +115,7 @@ def test_vllm_generate_streaming(vllm_adapter):
     def cb(chunk):
         received.append(chunk.delta)
 
-    with patch.object(vllm_adapter._client, "build_request") as mock_req, \
+    with patch.object(vllm_adapter._client, "build_request"), \
          patch.object(vllm_adapter._client, "send", return_value=mock_resp):
         result, handle = vllm_adapter.generate(
             job_id="job_2",

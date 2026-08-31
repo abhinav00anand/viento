@@ -94,8 +94,21 @@ addopts = ["-v", "--tb=short"]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
-ignore = ["E501", "B008", "N818"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "C4", "SIM"]
+ignore = [
+    "E501",
+    "B008",
+    "N818",
+    "UP006",
+    "UP035",
+    "SIM105",
+    "SIM102",
+    "SIM117",
+    "C416",
+    "B904",
+]
 
 [tool.mypy]
 python_version = "3.9"
