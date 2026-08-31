@@ -1,6 +1,9 @@
 """Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
 
+import json
+
 import pytest
+from pydantic import SecretStr
 
 from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import (
@@ -137,6 +140,63 @@ def test_envelope_serialization_and_deserialization_roundtrip():
     assert deserialized.session_id == "client-01"
     assert deserialized.sequence == 1
     assert deserialized.payload["model"] == "mistral"
+
+
+def test_secret_credentials_are_typed_and_masked():
+    secret = "super-secret-key"
+    hello = HelloPayload(runtime_id="client-123", auth_key=secret)
+    ready = SessionReadyPayload(session_id="sess-01", api_key=secret, expires_at=1000.0)
+
+    assert isinstance(hello.auth_key, SecretStr)
+    assert isinstance(ready.api_key, SecretStr)
+
+    assert secret not in repr(hello)
+    assert secret not in str(hello)
+    assert secret not in hello.model_dump_json()
+    assert "**********" in hello.model_dump_json()
+
+    assert secret not in repr(ready)
+    assert secret not in str(ready)
+    assert secret not in ready.model_dump_json()
+    assert "**********" in ready.model_dump_json()
+
+
+def test_secret_credentials_are_unwrapped_only_at_wire_boundary():
+    secret = "wire-secret-key"
+    payload = HelloPayload(runtime_id="client-123", auth_key=secret)
+    envelope = ProtocolEnvelope(
+        type=FrameType.HELLO,
+        sequence=0,
+        payload=payload.model_dump(),
+    )
+
+    in_memory_dump = envelope.model_dump()
+    assert isinstance(in_memory_dump["payload"]["auth_key"], SecretStr)
+    assert secret not in repr(in_memory_dump)
+
+    wire = envelope.to_json()
+    assert secret in wire
+    assert "**********" not in wire
+
+    decoded = json.loads(wire)
+    assert decoded["payload"]["auth_key"] == secret
+
+    roundtrip = ProtocolEnvelope.from_json(wire)
+    roundtrip_payload = HelloPayload.model_validate(roundtrip.payload)
+    assert roundtrip_payload.auth_key.get_secret_value() == secret
+
+
+def test_session_ready_payload_parses_secret_key():
+    secret = "ready-secret-key"
+    payload = SessionReadyPayload(
+        session_id="sess-01",
+        api_key=secret,
+        expires_at=1000.0,
+        ttl_seconds=900,
+    )
+
+    assert payload.api_key.get_secret_value() == secret
+    assert payload.ttl_seconds == 900
 
 
 def test_sequence_tracker_normal_flow():
