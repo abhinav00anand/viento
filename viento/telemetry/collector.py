@@ -1,13 +1,14 @@
 """Hardware telemetry collector, request counters, and latency histogram tracking."""
 
-from dataclasses import dataclass, field
 import logging
 import math
 import os
 import shutil
 import subprocess
 import time
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
 import psutil
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,6 @@ class TelemetrySnapshot:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert snapshot to dictionary format."""
-        from dataclasses import asdict
         gpu_list = []
         if self.hardware.gpus:
             for g in self.hardware.gpus:

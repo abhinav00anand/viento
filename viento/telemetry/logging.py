@@ -5,7 +5,7 @@ import logging
 import re
 import sys
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 
 class SecretMasker:
@@ -79,10 +79,10 @@ class StructuredJsonFormatter(logging.Formatter):
 
         # Include trace_id or extra attributes if attached to record
         if hasattr(record, "trace_id"):
-            log_payload["trace_id"] = SecretMasker.mask(str(getattr(record, "trace_id")))
+            log_payload["trace_id"] = SecretMasker.mask(str(record.trace_id))
 
-        if hasattr(record, "extra_data") and isinstance(getattr(record, "extra_data"), dict):
-            log_payload["extra"] = SecretMasker.mask_object(getattr(record, "extra_data"))
+        if hasattr(record, "extra_data") and isinstance(record.extra_data, dict):
+            log_payload["extra"] = SecretMasker.mask_object(record.extra_data)
 
         if record.exc_info:
             exc_text = self.formatException(record.exc_info)
