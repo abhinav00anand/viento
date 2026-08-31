@@ -223,9 +223,9 @@ class TelemetryCollector:
                 if len(parts) >= 5:
                     idx = int(parts[0]) if parts[0].isdigit() else 0
                     name = parts[1]
-                    util = self._safe_float(parts[2], default=0.0) or 0.0
-                    mem_used = self._safe_float(parts[3], default=0.0) or 0.0
-                    mem_total = self._safe_float(parts[4], default=1.0) or 1.0
+                    util = self._safe_float(parts[2], default=0.0)
+                    mem_used = self._safe_float(parts[3], default=0.0)
+                    mem_total = self._safe_float(parts[4], default=1.0)
                     temp = self._safe_float(parts[5], default=None) if len(parts) > 5 else None
                     power = self._safe_float(parts[6], default=None) if len(parts) > 6 else None
 
