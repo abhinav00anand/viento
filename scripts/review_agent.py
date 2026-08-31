@@ -148,14 +148,19 @@ async def post_review_to_github(repo: str, pr_number: str, token: str, review_bo
             print(f"Warning: Failed to post to GitHub ({response.status_code}): {response.text}")
 
 
-async def run_antigravity_agent(prompt: str, system_instructions: str, model: str = "gemini-3.7-flash") -> str:
-    """Execute review using Google Antigravity SDK if available, or fallback to Gemini API."""
+async def run_antigravity_agent(prompt: str, system_instructions: str, model: str = "gemini-2.5-flash") -> str:
+    """Execute review using direct API or Google Antigravity SDK with timeout failover."""
     api_key = os.environ.get("ANTIGRAVITY_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError(
             "Missing API Key. Please set ANTIGRAVITY_API_KEY or GEMINI_API_KEY environment variable.\n"
             "Get one at: https://aistudio.google.com/app/api-keys"
         )
+
+    # In CI/GitHub Actions, use high-speed direct API to avoid headless IPC container deadlocks
+    if os.environ.get("CI") == "true":
+        print("Running in CI mode: Using high-speed Gemini Agent API...")
+        return await run_gemini_fallback(prompt, system_instructions, api_key, model)
 
     try:
         from google.antigravity import Agent, LocalAgentConfig
@@ -166,14 +171,19 @@ async def run_antigravity_agent(prompt: str, system_instructions: str, model: st
             system_instructions=system_instructions,
             workspaces=[os.getcwd()],
         )
-        async with Agent(config) as agent:
-            response = await agent.chat(prompt)
-            output_tokens = []
-            async for token in response:
-                sys.stdout.write(token)
-                sys.stdout.flush()
-                output_tokens.append(token)
-            return "".join(output_tokens)
+
+        async def _call_agent():
+            async with Agent(config) as agent:
+                response = await agent.chat(prompt)
+                output_tokens = []
+                async for token in response:
+                    sys.stdout.write(token)
+                    sys.stdout.flush()
+                    output_tokens.append(token)
+                return "".join(output_tokens)
+
+        # 25-second watchdog for local harness
+        return await asyncio.wait_for(_call_agent(), timeout=25.0)
     except Exception as e:
         print(f"Notice: Antigravity SDK harness encountered ({e}). Transitioning to direct API with multi-model failover...")
         return await run_gemini_fallback(prompt, system_instructions, api_key, model)
@@ -230,7 +240,7 @@ async def main() -> None:
     parser.add_argument("--head", default="HEAD", help="Head commit or branch (default: HEAD)")
     parser.add_argument("--diff-file", help="Path to pre-extracted diff file instead of git")
     parser.add_argument("--deep", action="store_true", help="Execute deep architectural & safety audit")
-    parser.add_argument("--model", default="gemini-3.7-flash", help="Model identifier (default: gemini-3.7-flash)")
+    parser.add_argument("--model", default="gemini-2.5-flash", help="Model identifier (default: gemini-2.5-flash)")
     parser.add_argument("--output", help="Path to write markdown output report")
     parser.add_argument("--post-comment", action="store_true", help="Post review comment directly to GitHub PR")
     parser.add_argument("--additional-context", default="", help="Custom instructions or review focus")
