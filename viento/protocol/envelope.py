@@ -3,11 +3,12 @@ Canonical Wire Protocol Envelope (Version 1.0) for Zephyr SDK.
 Maintains byte-for-byte schema parity with Cloud Control Plane protocol definitions.
 """
 
-from enum import Enum
 import json
 import time
 import uuid
+from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
+
 from pydantic import BaseModel, ConfigDict, Field
 
 

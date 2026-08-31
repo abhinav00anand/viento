@@ -3,12 +3,13 @@
 import json
 import logging
 from typing import Any, Dict, Optional, Tuple, Union
-from pydantic import ValidationError, BaseModel
+
+from pydantic import BaseModel, ValidationError
 
 from viento.protocol.envelope import (
+    PAYLOAD_TYPE_MAP,
     MessageType,
     ProtocolEnvelope,
-    PAYLOAD_TYPE_MAP,
 )
 
 logger = logging.getLogger(__name__)
