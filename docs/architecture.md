@@ -78,6 +78,22 @@ viento/
 - On completion, sends `job_complete` frame back through `ConnectionManager`.
 - On timeout/failure, sends `job_error` frame and increments failure counters.
 
+### OllamaAdapter
+
+The primary inference backend. All network I/O is performed with `httpx`:
+
+| Ollama Endpoint | Purpose | Streaming? |
+|---|---|---|
+| `GET /api/version` | Health check + latency probe | No |
+| `GET /api/tags` | List installed models | No |
+| `POST /api/show` | Model metadata | No |
+| `POST /api/pull` | Download model weights | NDJSON progress |
+| `POST /api/chat` | Chat completion | NDJSON tokens |
+| `POST /api/embed` | Batch embeddings (new API) | No |
+| `POST /api/embeddings` | Single embedding (legacy API) | No |
+
+The adapter performs automatic **context overflow detection** (inspects Ollama error messages for "too long"/"context") and maps all network errors to typed `BackendOfflineError`, `BackendTimeoutError`, `ModelNotFoundError`, `ContextOverflowError`.
+
 ---
 
 ## 3. End-to-End Data Flow
