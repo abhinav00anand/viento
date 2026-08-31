@@ -6,6 +6,7 @@ import math
 import os
 import shutil
 import subprocess
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -151,6 +152,7 @@ class TelemetryCollector:
 
     def __init__(self):
         self._request_counters: Dict[str, Dict[str, int]] = {}  # model -> {status -> count}
+        self._counter_lock = threading.Lock()
         self._latency_histograms: Dict[str, LatencyHistogram] = {}  # operation -> histogram
         self._nvidia_smi_path: Optional[str] = shutil.which("nvidia-smi")
 
@@ -304,12 +306,13 @@ class TelemetryCollector:
         return await asyncio.to_thread(self.get_hardware_stats)
 
     def increment_request(self, model: str, status: str = "success") -> None:
-        """Increments request counter for model and status."""
-        if model not in self._request_counters:
-            self._request_counters[model] = {}
-        self._request_counters[model][status] = (
-            self._request_counters[model].get(status, 0) + 1
-        )
+        """Increments request counter for model and status in a thread-safe manner."""
+        with self._counter_lock:
+            if model not in self._request_counters:
+                self._request_counters[model] = {}
+            self._request_counters[model][status] = (
+                self._request_counters[model].get(status, 0) + 1
+            )
 
     def record_latency(self, operation: str, latency_ms: float) -> None:
         """Records latency for operation in latency histogram."""
@@ -323,10 +326,14 @@ class TelemetryCollector:
         latencies = {
             op: hist.summary() for op, hist in self._latency_histograms.items()
         }
+        with self._counter_lock:
+            requests_copy = {
+                model: dict(counts) for model, counts in self._request_counters.items()
+            }
         return TelemetrySnapshot(
             active_jobs_count=0,
             hardware=hw,
-            requests=self._request_counters,
+            requests=requests_copy,
             latencies=latencies,
         )
 

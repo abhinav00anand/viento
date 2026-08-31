@@ -2,6 +2,8 @@
 
 import json
 import logging
+import threading
+
 import pytest
 
 from viento.telemetry.collector import (
@@ -229,4 +231,26 @@ async def test_gpu_metrics_async_execution():
 
     hw = await collector.get_hardware_stats_async()
     assert hw.memory_total_bytes > 0
+
+
+def test_increment_request_concurrent_thread_safety():
+    """Verify thread-safety of increment_request under concurrent multi-threaded access."""
+    collector = TelemetryCollector()
+    num_threads = 10
+    increments_per_thread = 200
+    model_name = "test-mesh-model"
+
+    def worker():
+        for _ in range(increments_per_thread):
+            collector.increment_request(model=model_name, status="success")
+
+    threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    snapshot = collector.collect_snapshot()
+    expected_total = num_threads * increments_per_thread
+    assert snapshot.requests[model_name]["success"] == expected_total
 
