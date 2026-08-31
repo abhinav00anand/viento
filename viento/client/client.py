@@ -7,7 +7,9 @@ and vector embeddings across the Zephyr distributed mesh network.
 
 import os
 import time
-from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
+from collections.abc import AsyncGenerator, Generator
+from typing import Any, Dict, List, Optional, Union
+
 import httpx
 
 
