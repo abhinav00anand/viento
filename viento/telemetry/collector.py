@@ -191,6 +191,16 @@ class TelemetryCollector:
                 "memory_percent": 0.0,
             }
 
+    @staticmethod
+    def _safe_float(value: str, default: Optional[float] = 0.0) -> Optional[float]:
+        """Safely parse float from nvidia-smi csv output, handling [N/A] and [Not Supported]."""
+        if not value or value.startswith("[") or value.lower() in ("n/a", "unknown"):
+            return default
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return default
+
     def get_gpu_metrics(self) -> Optional[List[GPUStat]]:
         """Collects GPU statistics via nvidia-smi subprocess query if available."""
         if not self._nvidia_smi_path:
@@ -211,13 +221,13 @@ class TelemetryCollector:
                     continue
                 parts = [p.strip() for p in line.split(",")]
                 if len(parts) >= 5:
-                    idx = int(parts[0])
+                    idx = int(parts[0]) if parts[0].isdigit() else 0
                     name = parts[1]
-                    util = float(parts[2]) if parts[2] != "[N/A]" else 0.0
-                    mem_used = float(parts[3]) if parts[3] != "[N/A]" else 0.0
-                    mem_total = float(parts[4]) if parts[4] != "[N/A]" else 1.0
-                    temp = float(parts[5]) if len(parts) > 5 and parts[5] != "[N/A]" else None
-                    power = float(parts[6]) if len(parts) > 6 and parts[6] != "[N/A]" else None
+                    util = self._safe_float(parts[2], default=0.0) or 0.0
+                    mem_used = self._safe_float(parts[3], default=0.0) or 0.0
+                    mem_total = self._safe_float(parts[4], default=1.0) or 1.0
+                    temp = self._safe_float(parts[5], default=None) if len(parts) > 5 else None
+                    power = self._safe_float(parts[6], default=None) if len(parts) > 6 else None
 
                     mem_percent = (mem_used / mem_total * 100.0) if mem_total > 0 else 0.0
 

@@ -159,3 +159,34 @@ def test_get_logger_factory():
     assert logger_inst.level == logging.DEBUG
     assert len(logger_inst.handlers) == 1
     assert isinstance(logger_inst.handlers[0].formatter, StructuredJsonFormatter)
+
+
+def test_gpu_metrics_edge_cases_and_safe_float():
+    """Verify robust parsing of [N/A], [Not Supported], and zero memory."""
+    from unittest.mock import MagicMock, patch
+
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = "fake-smi"
+
+    # Simulated output with MIG slice reporting [Not Supported] and 0 MB total
+    fake_smi_output = (
+        "0, NVIDIA A100-SXM4-MIG, [Not Supported], [N/A], [N/A], [N/A], [N/A]\n"
+        "1, NVIDIA RTX 4090, 35.5, 4000, 24000, 48.0, 150.2\n"
+    )
+    mock_res = MagicMock(stdout=fake_smi_output)
+
+    with patch("subprocess.run", return_value=mock_res):
+        gpus = collector.get_gpu_metrics()
+        assert gpus is not None
+        assert len(gpus) == 2
+        # MIG GPU
+        assert gpus[0].index == 0
+        assert gpus[0].gpu_util_percent == 0.0
+        assert gpus[0].memory_used_mb == 0.0
+        assert gpus[0].temperature_c is None
+        # RTX 4090
+        assert gpus[1].index == 1
+        assert gpus[1].memory_used_mb == 4000.0
+        assert gpus[1].temperature_c == 48.0
+        assert gpus[1].power_draw_w == 150.2
+
