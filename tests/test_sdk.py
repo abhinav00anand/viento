@@ -1,10 +1,9 @@
 """Unit tests for SDK CLI, config loader, connection manager, and scheduler."""
 
 import asyncio
-import os
 import threading
-from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from viento.backends.base import ExecutionHandle, GenerationResult
@@ -20,7 +19,7 @@ def test_config_defaults_and_serialization(tmp_path):
 
     assert cfg.server_url == "wss://viento.onrender.com/ws/runtime"
     assert cfg.model_backend == "ollama"
-    
+
     # Secret non-persistence assertion
     d = cfg.to_dict()
     assert "bootstrap_key" not in d

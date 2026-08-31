@@ -2,12 +2,11 @@
 
 import json
 import logging
-import pytest
 
 from viento.telemetry.collector import (
+    HardwareStats,
     LatencyHistogram,
     TelemetryCollector,
-    HardwareStats,
 )
 from viento.telemetry.logging import (
     ConsoleFormatter,
