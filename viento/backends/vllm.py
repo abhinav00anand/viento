@@ -7,6 +7,7 @@ import json
 import logging
 import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import httpx
 
 from viento.backends.base import (

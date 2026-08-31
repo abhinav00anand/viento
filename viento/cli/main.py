@@ -8,17 +8,14 @@ log tailing, version reporting, model weight pulling, and runtime shutdown.
 
 import asyncio
 import json
-import os
 import sys
 import time
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 import click
 import httpx
 import psutil
 from rich.console import Console
-from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
@@ -31,10 +28,9 @@ from rich.progress import (
 )
 from rich.syntax import Syntax
 from rich.table import Table
-from rich.text import Text
 
 from viento.backends import get_backend_adapter
-from viento.config.loader import ConfigManager, RuntimeState, ZephyrConfig
+from viento.config.loader import ConfigManager, ZephyrConfig
 from viento.connection.manager import ConnectionManager
 from viento.scheduler.scheduler import JobScheduler
 
@@ -193,7 +189,7 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
         connection_task = asyncio.create_task(conn_mgr.start())
 
         try:
-            with console.status("[bold cyan]Runtime active & listening for incoming inference jobs...[/bold cyan]") as status:
+            with console.status("[bold cyan]Runtime active & listening for incoming inference jobs...[/bold cyan]"):
                 while True:
                     await asyncio.sleep(1.0)
         except (KeyboardInterrupt, asyncio.CancelledError):
@@ -284,7 +280,7 @@ def models_list():
         console.print("[yellow]No models found in local repository.[/yellow]")
         return
 
-    table = Table(title=f"Discovered & Registered Models", show_header=True, header_style="bold green")
+    table = Table(title="Discovered & Registered Models", show_header=True, header_style="bold green")
     table.add_column("Model Name", style="cyan", no_wrap=True)
     table.add_column("Source", style="yellow")
     table.add_column("Size", style="magenta")
