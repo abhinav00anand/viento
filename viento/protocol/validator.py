@@ -18,7 +18,12 @@ logger = logging.getLogger(__name__)
 class ProtocolValidationError(Exception):
     """Base exception for protocol serialization or validation errors."""
 
-    def __init__(self, message: str, code: str = "PROTOCOL_VALIDATION_ERROR", details: Optional[Dict[str, Any]] = None):
+    def __init__(
+        self,
+        message: str,
+        code: str = "PROTOCOL_VALIDATION_ERROR",
+        details: Optional[Dict[str, Any]] = None,
+    ):
         super().__init__(message)
         self.message = message
         self.code = code
@@ -138,7 +143,9 @@ class ProtocolValidator:
             ) from e
 
     @staticmethod
-    def validate_payload(msg_type: Union[str, MessageType], raw_payload: Union[Dict[str, Any], BaseModel]) -> BaseModel:
+    def validate_payload(
+        msg_type: Union[str, MessageType], raw_payload: Union[Dict[str, Any], BaseModel]
+    ) -> BaseModel:
         """Validates raw dictionary or payload instance against payload model for msg_type.
 
         Args:

@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class FrameType(str, Enum):
     """Supported WebSocket canonical frame types."""
+
     HELLO = "hello"
     WELCOME = "welcome"
     REGISTER = "register"
@@ -38,6 +39,7 @@ MessageType = FrameType
 
 class ModelInfo(BaseModel):
     """Detailed model metadata and capability specification."""
+
     model_config = ConfigDict(extra="forbid")
 
     id: str
@@ -54,6 +56,7 @@ class ModelInfo(BaseModel):
 
 class HardwareSpecs(BaseModel):
     """Hardware capability specification reported by runtime. Defaults to unknown if telemetry fails."""
+
     model_config = ConfigDict(extra="forbid")
 
     cpu_count: int = 0
@@ -72,6 +75,7 @@ class ProtocolEnvelope(BaseModel):
     Wraps outer metadata (ids, sequence, timestamps) and nested payload.
     Strict validation forbids unknown extra fields.
     """
+
     model_config = ConfigDict(extra="forbid")
 
     version: Literal["1.0"] = "1.0"

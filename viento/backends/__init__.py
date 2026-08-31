@@ -15,7 +15,9 @@ from viento.backends.ollama import OllamaAdapter
 from viento.backends.vllm import VLLMAdapter
 
 
-def get_backend_adapter(backend_name: str = "ollama", base_url: Optional[str] = None) -> InferenceBackend:
+def get_backend_adapter(
+    backend_name: str = "ollama", base_url: Optional[str] = None
+) -> InferenceBackend:
     """
     Factory function to instantiate the matching backend adapter class
     based on backend_name string ("ollama", "vllm", "llamacpp").

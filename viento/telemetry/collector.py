@@ -47,6 +47,7 @@ class HardwareStats:
 @dataclass
 class TelemetrySnapshot:
     """A point-in-time snapshot of telemetry metrics."""
+
     active_jobs_count: int
     hardware: HardwareStats
     requests: Dict[str, Dict[str, int]]
@@ -57,16 +58,18 @@ class TelemetrySnapshot:
         gpu_list = []
         if self.hardware.gpus:
             for g in self.hardware.gpus:
-                gpu_list.append({
-                    "index": g.index,
-                    "name": g.name,
-                    "gpu_util_percent": g.gpu_util_percent,
-                    "memory_used_mb": g.memory_used_mb,
-                    "memory_total_mb": g.memory_total_mb,
-                    "memory_percent": g.memory_percent,
-                    "temperature_c": g.temperature_c,
-                    "power_draw_w": g.power_draw_w,
-                })
+                gpu_list.append(
+                    {
+                        "index": g.index,
+                        "name": g.name,
+                        "gpu_util_percent": g.gpu_util_percent,
+                        "memory_used_mb": g.memory_used_mb,
+                        "memory_total_mb": g.memory_total_mb,
+                        "memory_percent": g.memory_percent,
+                        "temperature_c": g.temperature_c,
+                        "power_draw_w": g.power_draw_w,
+                    }
+                )
         return {
             "timestamp": self.hardware.timestamp,
             "hardware": {
@@ -223,9 +226,7 @@ class TelemetryCollector:
             "--format=csv,noheader,nounits",
         ]
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, check=True, timeout=3.0
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=3.0)
             gpus = []
             for line in result.stdout.strip().splitlines():
                 if not line.strip():
@@ -273,9 +274,7 @@ class TelemetryCollector:
                 if isinstance(e.stderr, bytes)
                 else str(e.stderr or "").strip()
             )
-            logger.warning(
-                f"nvidia-smi query failed with code {e.returncode}: {err_msg}"
-            )
+            logger.warning(f"nvidia-smi query failed with code {e.returncode}: {err_msg}")
             return None
         except Exception as e:
             # Catch-all for any other unexpected parsing or runtime errors.
@@ -317,9 +316,7 @@ class TelemetryCollector:
         with self._counter_lock:
             if model not in self._request_counters:
                 self._request_counters[model] = {}
-            self._request_counters[model][status] = (
-                self._request_counters[model].get(status, 0) + 1
-            )
+            self._request_counters[model][status] = self._request_counters[model].get(status, 0) + 1
 
     def record_latency(self, operation: str, latency_ms: float) -> None:
         """Records latency for operation in latency histogram."""
@@ -330,9 +327,7 @@ class TelemetryCollector:
     def collect_snapshot(self) -> TelemetrySnapshot:
         """Returns a snapshot of the current telemetry stats."""
         hw = self.get_hardware_stats()
-        latencies = {
-            op: hist.summary() for op, hist in self._latency_histograms.items()
-        }
+        latencies = {op: hist.summary() for op, hist in self._latency_histograms.items()}
         with self._counter_lock:
             requests_copy = {
                 model: dict(counts) for model, counts in self._request_counters.items()

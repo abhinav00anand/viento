@@ -142,7 +142,7 @@ class JobScheduler:
             logger.error("Received job envelope without job_id")
             return False
 
-        is_embedding = (envelope.type == "embedding_request")
+        is_embedding = envelope.type == "embedding_request"
         job = Job(
             job_id=job_id,
             request_id=request_id,
@@ -161,7 +161,9 @@ class JobScheduler:
             self.queue.put_nowait(job)
             self._jobs[job_id] = job
         except asyncio.QueueFull:
-            logger.warning("Local job queue full (%d jobs). Rejecting job %s.", self.max_queue_depth, job_id)
+            logger.warning(
+                "Local job queue full (%d jobs). Rejecting job %s.", self.max_queue_depth, job_id
+            )
             await self.connection_manager.send_job_error(
                 job_id=job_id,
                 error_message=f"Runtime queue full (max {self.max_queue_depth} jobs).",
@@ -205,7 +207,9 @@ class JobScheduler:
                 job: Job = await self.queue.get()
                 task = asyncio.create_task(self._execute_job_wrapper(job))
                 self._active_tasks[job.job_id] = task
-                task.add_done_callback(lambda t, j_id=job.job_id: self._active_tasks.pop(j_id, None))
+                task.add_done_callback(
+                    lambda t, j_id=job.job_id: self._active_tasks.pop(j_id, None)
+                )
             except asyncio.CancelledError:
                 break
             except Exception as exc:
@@ -299,6 +303,7 @@ class JobScheduler:
 
     async def _execute_embedding_job(self, job: Job) -> None:
         """Execute embedding job under unified queue & semaphore pipeline with early handle registration."""
+
         def handle_created_callback(handle: ExecutionHandle) -> None:
             self._active_handles[job.job_id] = handle
 

@@ -210,10 +210,17 @@ def test_gpu_metrics_subprocess_error_handling():
     collector = TelemetryCollector()
     collector._nvidia_smi_path = "nvidia-smi"
 
-    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="nvidia-smi", timeout=3.0)):
+    with patch(
+        "subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="nvidia-smi", timeout=3.0)
+    ):
         assert collector.get_gpu_metrics() is None
 
-    with patch("subprocess.run", side_effect=subprocess.CalledProcessError(returncode=1, cmd="nvidia-smi", stderr="driver err")):
+    with patch(
+        "subprocess.run",
+        side_effect=subprocess.CalledProcessError(
+            returncode=1, cmd="nvidia-smi", stderr="driver err"
+        ),
+    ):
         assert collector.get_gpu_metrics() is None
 
     with patch("subprocess.run", side_effect=FileNotFoundError()):
@@ -253,4 +260,3 @@ def test_increment_request_concurrent_thread_safety():
     snapshot = collector.collect_snapshot()
     expected_total = num_threads * increments_per_thread
     assert snapshot.requests[model_name]["success"] == expected_total
-

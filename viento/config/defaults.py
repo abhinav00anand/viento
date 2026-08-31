@@ -23,35 +23,27 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Cloud Gateway
     "server_url": "wss://viento.onrender.com/ws/runtime",
     "http_url": "https://viento.onrender.com",
-
     # Local Backend
     "ollama_url": "http://localhost:11434",
-
     # Node Identity
     "node_name": "zephyr-node",
-
     # Concurrency
     "max_concurrency": 1,
-
     # Heartbeat
-    "heartbeat_interval": 15,       # seconds between heartbeat pings
-    "heartbeat_deadline": 45,       # seconds before server marks node offline
-
+    "heartbeat_interval": 15,  # seconds between heartbeat pings
+    "heartbeat_deadline": 45,  # seconds before server marks node offline
     # Job Limits
-    "job_timeout": 120,             # per-job deadline in seconds
-    "max_queue_depth": 50,          # maximum jobs waiting per runtime
-
+    "job_timeout": 120,  # per-job deadline in seconds
+    "max_queue_depth": 50,  # maximum jobs waiting per runtime
     # API Key
-    "token_ttl": 3600,              # temporary key lifetime (1 hour)
-
+    "token_ttl": 3600,  # temporary key lifetime (1 hour)
     # Logging
     "log_level": "INFO",
-    "log_json": False,              # if True, emit structured JSON logs
-
+    "log_json": False,  # if True, emit structured JSON logs
     # Reconnection
-    "reconnect_base_delay": 1.0,    # seconds — first backoff interval
-    "reconnect_max_delay": 30.0,    # seconds — upper cap on backoff
-    "reconnect_jitter_factor": 0.2, # fraction of current backoff to randomise
+    "reconnect_base_delay": 1.0,  # seconds — first backoff interval
+    "reconnect_max_delay": 30.0,  # seconds — upper cap on backoff
+    "reconnect_jitter_factor": 0.2,  # fraction of current backoff to randomise
 }
 
 # ---------------------------------------------------------------------------
@@ -60,31 +52,37 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 # Maps OS environment variable name -> ZephyrConfig attribute name
 ENV_VAR_MAPPING: Dict[str, str] = {
-    "ZEPHYR_SERVER_URL":           "server_url",
-    "ZEPHYR_HTTP_URL":             "http_url",
-    "ZEPHYR_OLLAMA_URL":           "ollama_url",
-    "ZEPHYR_NODE_NAME":            "node_name",
-    "ZEPHYR_MAX_CONCURRENCY":      "max_concurrency",
-    "ZEPHYR_HEARTBEAT_INTERVAL":   "heartbeat_interval",
-    "ZEPHYR_HEARTBEAT_DEADLINE":   "heartbeat_deadline",
-    "ZEPHYR_JOB_TIMEOUT":          "job_timeout",
-    "ZEPHYR_MAX_QUEUE_DEPTH":      "max_queue_depth",
-    "ZEPHYR_TOKEN_TTL":            "token_ttl",
-    "ZEPHYR_LOG_LEVEL":            "log_level",
-    "ZEPHYR_LOG_JSON":             "log_json",
+    "ZEPHYR_SERVER_URL": "server_url",
+    "ZEPHYR_HTTP_URL": "http_url",
+    "ZEPHYR_OLLAMA_URL": "ollama_url",
+    "ZEPHYR_NODE_NAME": "node_name",
+    "ZEPHYR_MAX_CONCURRENCY": "max_concurrency",
+    "ZEPHYR_HEARTBEAT_INTERVAL": "heartbeat_interval",
+    "ZEPHYR_HEARTBEAT_DEADLINE": "heartbeat_deadline",
+    "ZEPHYR_JOB_TIMEOUT": "job_timeout",
+    "ZEPHYR_MAX_QUEUE_DEPTH": "max_queue_depth",
+    "ZEPHYR_TOKEN_TTL": "token_ttl",
+    "ZEPHYR_LOG_LEVEL": "log_level",
+    "ZEPHYR_LOG_JSON": "log_json",
     "ZEPHYR_RECONNECT_BASE_DELAY": "reconnect_base_delay",
-    "ZEPHYR_RECONNECT_MAX_DELAY":  "reconnect_max_delay",
+    "ZEPHYR_RECONNECT_MAX_DELAY": "reconnect_max_delay",
 }
 
 # Numeric fields that should be cast to int
 _INT_FIELDS = {
-    "max_concurrency", "heartbeat_interval", "heartbeat_deadline",
-    "job_timeout", "max_queue_depth", "token_ttl",
+    "max_concurrency",
+    "heartbeat_interval",
+    "heartbeat_deadline",
+    "job_timeout",
+    "max_queue_depth",
+    "token_ttl",
 }
 
 # Numeric fields that should be cast to float
 _FLOAT_FIELDS = {
-    "reconnect_base_delay", "reconnect_max_delay", "reconnect_jitter_factor",
+    "reconnect_base_delay",
+    "reconnect_max_delay",
+    "reconnect_jitter_factor",
 }
 
 # Boolean fields
@@ -133,7 +131,10 @@ def apply_env_overrides(config: "ZephyrConfig") -> "ZephyrConfig":
         except (ValueError, TypeError) as exc:
             logger.warning(
                 "Could not apply env override %s=%r for attribute '%s': %s",
-                env_key, raw, attr_name, exc,
+                env_key,
+                raw,
+                attr_name,
+                exc,
             )
 
     if applied:

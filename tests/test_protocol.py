@@ -1,6 +1,5 @@
 """Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
 
-
 from viento.protocol.envelope import (
     CancelAckPayload,
     CancelJobPayload,
@@ -59,7 +58,9 @@ def test_heartbeat_payload_instantiation():
 
 
 def test_job_request_payload_instantiation():
-    payload = JobRequestPayload(model="llama3", messages=[{"role": "user", "content": "Hello world"}], temperature=0.8)
+    payload = JobRequestPayload(
+        model="llama3", messages=[{"role": "user", "content": "Hello world"}], temperature=0.8
+    )
     assert payload.model == "llama3"
     assert payload.messages[0]["content"] == "Hello world"
     assert payload.temperature == 0.8
@@ -83,7 +84,9 @@ def test_job_complete_payload_instantiation():
 
 
 def test_job_error_payload_instantiation():
-    payload = JobErrorPayload(error_message="Model llama99 not loaded", error_code="MODEL_NOT_FOUND")
+    payload = JobErrorPayload(
+        error_message="Model llama99 not loaded", error_code="MODEL_NOT_FOUND"
+    )
     assert payload.error_code == "MODEL_NOT_FOUND"
 
 
@@ -114,7 +117,9 @@ def test_embedding_response_payload_instantiation():
 
 
 def test_envelope_serialization_and_deserialization_roundtrip():
-    payload = JobRequestPayload(model="mistral", messages=[{"role": "user", "content": "Write a poem"}])
+    payload = JobRequestPayload(
+        model="mistral", messages=[{"role": "user", "content": "Write a poem"}]
+    )
     envelope = ProtocolEnvelope(
         type=FrameType.JOB_REQUEST,
         session_id="client-01",

@@ -75,17 +75,19 @@ class VLLMAdapter(InferenceBackend):
             data = res.json()
             models = []
             for item in data.get("data", []):
-                models.append({
-                    "id": item.get("id"),
-                    "name": item.get("id"),
-                    "status": "ready",
-                    "backend": "vllm",
-                    "context_length": 32768,
-                    "quantization": "FP16",
-                    "capabilities": ["chat", "streaming", "embeddings"],
-                    "max_concurrency": 8,
-                    "active_jobs": 0,
-                })
+                models.append(
+                    {
+                        "id": item.get("id"),
+                        "name": item.get("id"),
+                        "status": "ready",
+                        "backend": "vllm",
+                        "context_length": 32768,
+                        "quantization": "FP16",
+                        "capabilities": ["chat", "streaming", "embeddings"],
+                        "max_concurrency": 8,
+                        "active_jobs": 0,
+                    }
+                )
             return models
         except Exception:
             return []
@@ -193,7 +195,9 @@ class VLLMAdapter(InferenceBackend):
         job_id: Optional[str] = None,
         handle_callback: Optional[Callable[[ExecutionHandle], None]] = None,
     ) -> EmbeddingResult:
-        req = self._client.build_request("POST", "/embeddings", json={"model": model, "input": inputs})
+        req = self._client.build_request(
+            "POST", "/embeddings", json={"model": model, "input": inputs}
+        )
         res = self._client.send(req, stream=True)
         if res.status_code != 200:
             res.close()
@@ -209,14 +213,16 @@ class VLLMAdapter(InferenceBackend):
         try:
             body_bytes = res.read()
             if handle._cancelled:
-                return EmbeddingResult(embeddings=[], prompt_tokens=0, total_tokens=0, is_estimated=False)
+                return EmbeddingResult(
+                    embeddings=[], prompt_tokens=0, total_tokens=0, is_estimated=False
+                )
             data = json.loads(body_bytes)
             embeddings = [item["embedding"] for item in data.get("data", [])]
             usage = data.get("usage", {})
             prompt_tokens = usage.get("prompt_tokens", 0)
             total_tokens = usage.get("total_tokens", 0)
 
-            is_estimated = (prompt_tokens == 0)
+            is_estimated = prompt_tokens == 0
             if is_estimated:
                 prompt_tokens = sum(len(txt) // 4 for txt in inputs)
                 total_tokens = prompt_tokens
