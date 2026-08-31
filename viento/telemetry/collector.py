@@ -193,7 +193,15 @@ class TelemetryCollector:
 
     @staticmethod
     def _safe_float(value: str, default: Optional[float] = 0.0) -> Optional[float]:
-        """Safely parse float from nvidia-smi csv output, handling [N/A] and [Not Supported]."""
+        """Safely parse float from nvidia-smi csv output, handling [N/A] and [Not Supported].
+
+        Args:
+            value: The string metric value from nvidia-smi output.
+            default: Fallback float value if unparseable or unknown.
+
+        Returns:
+            The parsed float value, or the default value if parsing fails.
+        """
         if not value or value.startswith("[") or value.lower() in ("n/a", "unknown"):
             return default
         try:
@@ -225,7 +233,7 @@ class TelemetryCollector:
                     name = parts[1]
                     util = self._safe_float(parts[2], default=0.0)
                     mem_used = self._safe_float(parts[3], default=0.0)
-                    mem_total = self._safe_float(parts[4], default=1.0)
+                    mem_total = self._safe_float(parts[4], default=0.0)
                     temp = self._safe_float(parts[5], default=None) if len(parts) > 5 else None
                     power = self._safe_float(parts[6], default=None) if len(parts) > 6 else None
 
@@ -244,8 +252,17 @@ class TelemetryCollector:
                         )
                     )
             return gpus if gpus else None
+        except FileNotFoundError:
+            logger.debug("nvidia-smi executable not found, skipping GPU metrics collection.")
+            return None
+        except subprocess.TimeoutExpired:
+            logger.warning("nvidia-smi query timed out after 3.0 seconds.")
+            return None
+        except subprocess.CalledProcessError as e:
+            logger.debug(f"nvidia-smi query failed with code {e.returncode}: {e.stderr}")
+            return None
         except Exception as e:
-            logger.debug(f"nvidia-smi query failed: {e}")
+            logger.debug(f"Unexpected error querying nvidia-smi: {e}")
             return None
 
     def get_hardware_stats(self) -> HardwareStats:

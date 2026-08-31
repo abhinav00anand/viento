@@ -187,10 +187,30 @@ def test_gpu_metrics_edge_cases_and_safe_float():
         assert gpus[0].index == 0
         assert gpus[0].gpu_util_percent == 0.0
         assert gpus[0].memory_used_mb == 0.0
+        assert gpus[0].memory_total_mb == 0.0
+        assert gpus[0].memory_percent == 0.0
         assert gpus[0].temperature_c is None
         # RTX 4090
         assert gpus[1].index == 1
         assert gpus[1].memory_used_mb == 4000.0
         assert gpus[1].temperature_c == 48.0
         assert gpus[1].power_draw_w == 150.2
+
+
+def test_gpu_metrics_subprocess_error_handling():
+    """Verify that subprocess failures in get_gpu_metrics return None gracefully."""
+    import subprocess
+    from unittest.mock import patch
+
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = "nvidia-smi"
+
+    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="nvidia-smi", timeout=3.0)):
+        assert collector.get_gpu_metrics() is None
+
+    with patch("subprocess.run", side_effect=subprocess.CalledProcessError(returncode=1, cmd="nvidia-smi", stderr="driver err")):
+        assert collector.get_gpu_metrics() is None
+
+    with patch("subprocess.run", side_effect=FileNotFoundError()):
+        assert collector.get_gpu_metrics() is None
 
