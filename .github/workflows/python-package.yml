@@ -1,0 +1,161 @@
+name: Hard CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  matrix-test:
+    name: Test (${{ matrix.os }} - Py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+
+    - name: Install package and test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run complete test suite
+      run: |
+        pytest tests/ -v --tb=short
+
+  hardware-and-cli-test:
+    name: Real-World Hardware & CLI Diagnostics
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Test Simulated Single-GPU (RTX 4090 24GB)
+      run: |
+        python -c "
+        from unittest.mock import patch, MagicMock
+        from viento.telemetry.collector import TelemetryCollector
+
+        fake_smi = '0, NVIDIA GeForce RTX 4090, 45, 4096, 24576, 52, 180'
+        mock_res = MagicMock(stdout=fake_smi)
+
+        with patch('subprocess.run', return_value=mock_res):
+            collector = TelemetryCollector()
+            collector._nvidia_smi_path = 'fake-nvidia-smi'
+            gpus = collector.get_gpu_metrics()
+            assert gpus is not None, 'Failed to detect GPU'
+            assert len(gpus) == 1, f'Expected 1 GPU, got {len(gpus)}'
+            assert 'RTX 4090' in gpus[0].name
+            assert gpus[0].memory_total_mb == 24576
+            assert gpus[0].memory_used_mb == 4096
+            assert gpus[0].memory_percent == round(4096 / 24576 * 100.0, 2)
+            print('Single GPU Simulation PASSED')
+        "
+
+    - name: Test Simulated Multi-GPU (2x NVIDIA A100-80GB)
+      run: |
+        python -c "
+        from unittest.mock import patch, MagicMock
+        from viento.telemetry.collector import TelemetryCollector
+
+        fake_smi = (
+            '0, NVIDIA A100-SXM4-80GB, 85, 20480, 81920, 60, 300\n'
+            '1, NVIDIA A100-SXM4-80GB, 70, 10240, 81920, 58, 280\n'
+        )
+        mock_res = MagicMock(stdout=fake_smi)
+
+        with patch('subprocess.run', return_value=mock_res):
+            collector = TelemetryCollector()
+            collector._nvidia_smi_path = 'fake-nvidia-smi'
+            hw = collector.get_hardware_snapshot()
+            assert hw.gpus is not None
+            assert len(hw.gpus) == 2, f'Expected 2 GPUs, got {len(hw.gpus)}'
+            assert hw.gpus[0].memory_total_mb == 81920
+            assert hw.gpus[1].memory_total_mb == 81920
+            print('Multi-GPU Simulation PASSED')
+        "
+
+    - name: Test CPU-only Hardware Fallback
+      run: |
+        python -c "
+        from unittest.mock import patch
+        from viento.telemetry.collector import TelemetryCollector
+
+        collector = TelemetryCollector()
+        collector._nvidia_smi_path = None
+        hw = collector.get_hardware_snapshot()
+        assert hw.gpus is None
+        assert hw.cpu_count_logical >= 1
+        assert hw.memory_total_bytes > 0
+        print('CPU Fallback PASSED')
+        "
+
+    - name: Run CLI Smoke and Diagnostics
+      run: |
+        viento --version
+        viento --help
+        viento version
+        viento init --force
+        viento config view
+        viento doctor
+
+  distribution-integrity-test:
+    name: Package Build & Isolated Install Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Build package
+      run: |
+        python -m pip install --upgrade pip build twine
+        python -m build
+        twine check --strict dist/*
+
+    - name: Install and verify wheel in clean environment
+      run: |
+        pip install dist/*.whl
+        python -c "import viento; print('Installed Viento Version:', viento.__version__)"
+        viento --version
+        viento --help
+
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Run ruff linter
+      run: |
+        pip install ruff
+        ruff check viento/ tests/
