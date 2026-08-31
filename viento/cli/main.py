@@ -87,7 +87,10 @@ def init_command(force: bool):
 def version_command():
     """Output SDK runtime, Python environment, and protocol version information."""
     from viento import __version__
-    table = Table(title="Viento Version & Environment Info", show_header=True, header_style="bold cyan")
+
+    table = Table(
+        title="Viento Version & Environment Info", show_header=True, header_style="bold cyan"
+    )
     table.add_column("Property", style="yellow")
     table.add_column("Value", style="white")
 
@@ -104,18 +107,32 @@ def version_command():
 # Command: zephyr logs
 # -----------------------------------------------------------------------------
 @cli.command("logs")
-@click.option("--lines", "-n", type=int, default=50, help="Number of log lines to show (default 50).")
+@click.option(
+    "--lines", "-n", type=int, default=50, help="Number of log lines to show (default 50)."
+)
 def logs_command(lines: int):
     """View and tail structured runtime logs (~/.viento/logs/)."""
     log_file = config_mgr.logs_dir / "runtime.log"
     if not log_file.exists():
-        console.print(f"[yellow]No log file found at {log_file}. Run `viento run` to generate logs.[/yellow]")
+        console.print(
+            f"[yellow]No log file found at {log_file}. Run `viento run` to generate logs.[/yellow]"
+        )
         return
 
     try:
         content = log_file.read_text(encoding="utf-8").splitlines()
         tail = content[-lines:] if len(content) > lines else content
-        console.print(Panel(Syntax("\n".join(tail), "json" if tail and tail[0].startswith("{") else "text", theme="monokai"), title=f"Logs: {log_file} (last {len(tail)} lines)", border_style="cyan"))
+        console.print(
+            Panel(
+                Syntax(
+                    "\n".join(tail),
+                    "json" if tail and tail[0].startswith("{") else "text",
+                    theme="monokai",
+                ),
+                title=f"Logs: {log_file} (last {len(tail)} lines)",
+                border_style="cyan",
+            )
+        )
     except Exception as e:
         console.print(f"[bold red]Error reading log file: {e}[/bold red]")
 
@@ -128,8 +145,20 @@ def logs_command(lines: int):
 @click.option("--ollama-url", "-o", type=str, help="Override local Ollama API URL.")
 @click.option("--concurrency", "-c", type=int, help="Override maximum job concurrency.")
 @click.option("--bootstrap-key", "-k", type=str, help="Runtime bootstrap authentication key.")
-@click.option("--name", "--node-name", type=str, default=None, help="Override node name (default: machine-unique ID).")
-def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: Optional[int], bootstrap_key: Optional[str], name: Optional[str]):
+@click.option(
+    "--name",
+    "--node-name",
+    type=str,
+    default=None,
+    help="Override node name (default: machine-unique ID).",
+)
+def run_command(
+    server: Optional[str],
+    ollama_url: Optional[str],
+    concurrency: Optional[int],
+    bootstrap_key: Optional[str],
+    name: Optional[str],
+):
     """Boot local runtime, connect to WSS gateway, perform handshake, and process jobs."""
     cfg = config_mgr.load_config()
     if server:
@@ -176,11 +205,21 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
             f"[bold yellow]Key Expiry TTL:[/bold yellow] {ttl_minutes} minutes ({int(ttl)} seconds)\n"
             f"[dim]Use this key to authenticate client SDK calls during this session.[/dim]"
         )
-        console.print(Panel(panel_content, title="[bold green]Node Authenticated[/bold green]", border_style="green"))
+        console.print(
+            Panel(
+                panel_content,
+                title="[bold green]Node Authenticated[/bold green]",
+                border_style="green",
+            )
+        )
 
     conn_mgr.on_handshake_callback = on_handshake
-    conn_mgr.on_job_received_callback = lambda envelope: asyncio.create_task(scheduler.submit_job(envelope))
-    conn_mgr.on_embedding_received_callback = lambda envelope: asyncio.create_task(scheduler.submit_job(envelope))
+    conn_mgr.on_job_received_callback = lambda envelope: asyncio.create_task(
+        scheduler.submit_job(envelope)
+    )
+    conn_mgr.on_embedding_received_callback = lambda envelope: asyncio.create_task(
+        scheduler.submit_job(envelope)
+    )
     # BUG-5 FIX: cancel_job is SYNC not async — do not wrap in asyncio.create_task
     conn_mgr.on_job_cancel_callback = scheduler.cancel_job
 
@@ -189,7 +228,9 @@ def run_command(server: Optional[str], ollama_url: Optional[str], concurrency: O
         connection_task = asyncio.create_task(conn_mgr.start())
 
         try:
-            with console.status("[bold cyan]Runtime active & listening for incoming inference jobs...[/bold cyan]"):
+            with console.status(
+                "[bold cyan]Runtime active & listening for incoming inference jobs...[/bold cyan]"
+            ):
                 while True:
                     await asyncio.sleep(1.0)
         except (KeyboardInterrupt, asyncio.CancelledError):
@@ -221,8 +262,16 @@ def status_command():
     else:
         ttl_str = "[bold red]Expired / Inactive[/bold red]"
 
-    status_color = "green" if state.status == "running" else "yellow" if state.status in ("booting", "busy") else "red"
-    key_display = "Available in running process (in-memory only)" if state.status in ("running", "busy") else "N/A (Process stopped)"
+    status_color = (
+        "green"
+        if state.status == "running"
+        else "yellow" if state.status in ("booting", "busy") else "red"
+    )
+    key_display = (
+        "Available in running process (in-memory only)"
+        if state.status in ("running", "busy")
+        else "N/A (Process stopped)"
+    )
 
     table = Table(title="Zephyr Runtime Node Status", show_header=True, header_style="bold magenta")
     table.add_column("Property", style="cyan")
@@ -234,7 +283,10 @@ def status_command():
     table.add_row("API Key TTL", ttl_str)
     table.add_row("Server Gateway", cfg.server_url)
     table.add_row("Ollama Endpoint", cfg.ollama_url)
-    table.add_row("Registered Models", ", ".join(state.registered_models) if state.registered_models else "None")
+    table.add_row(
+        "Registered Models",
+        ", ".join(state.registered_models) if state.registered_models else "None",
+    )
     table.add_row("Jobs Completed", str(state.jobs_completed))
     table.add_row("Jobs Failed", str(state.jobs_failed))
 
@@ -280,7 +332,9 @@ def models_list():
         console.print("[yellow]No models found in local repository.[/yellow]")
         return
 
-    table = Table(title="Discovered & Registered Models", show_header=True, header_style="bold green")
+    table = Table(
+        title="Discovered & Registered Models", show_header=True, header_style="bold green"
+    )
     table.add_column("Model Name", style="cyan", no_wrap=True)
     table.add_column("Source", style="yellow")
     table.add_column("Size", style="magenta")
@@ -310,7 +364,9 @@ def models_add(model_name: str):
 
     models.add(model_name)
     config_mgr.update_runtime_state(registered_models=list(models))
-    console.print(f"[bold green]✔ Registered model alias:[/bold green] [yellow]{model_name}[/yellow]")
+    console.print(
+        f"[bold green]✔ Registered model alias:[/bold green] [yellow]{model_name}[/yellow]"
+    )
 
 
 @models_group.command("remove")
@@ -325,7 +381,9 @@ def models_remove(model_name: str):
 
     models.remove(model_name)
     config_mgr.update_runtime_state(registered_models=list(models))
-    console.print(f"[bold green]✔ Unregistered model alias:[/bold green] [yellow]{model_name}[/yellow]")
+    console.print(
+        f"[bold green]✔ Unregistered model alias:[/bold green] [yellow]{model_name}[/yellow]"
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -336,7 +394,9 @@ def doctor_command():
     """Diagnose local environment (Ollama API reachability, GPU/CPU stats, Cloud network)."""
     cfg = config_mgr.load_config()
 
-    console.print(Panel("[bold cyan]🩺 ZEPHYR ENVIRONMENT DIAGNOSTIC DOCTOR[/bold cyan]", border_style="cyan"))
+    console.print(
+        Panel("[bold cyan]🩺 ZEPHYR ENVIRONMENT DIAGNOSTIC DOCTOR[/bold cyan]", border_style="cyan")
+    )
     table = Table(show_header=True, header_style="bold white")
     table.add_column("Component", style="bold yellow")
     table.add_column("Status", style="bold")
@@ -349,11 +409,19 @@ def doctor_command():
             r = client.get(ollama_url)
             if r.status_code == 200:
                 count = len(r.json().get("models", []))
-                table.add_row("Ollama Service", "[green]✔ PASS[/green]", f"Reachable at {cfg.ollama_url} ({count} models available)")
+                table.add_row(
+                    "Ollama Service",
+                    "[green]✔ PASS[/green]",
+                    f"Reachable at {cfg.ollama_url} ({count} models available)",
+                )
             else:
-                table.add_row("Ollama Service", "[red]✖ FAIL[/red]", f"Returned HTTP {r.status_code}")
+                table.add_row(
+                    "Ollama Service", "[red]✖ FAIL[/red]", f"Returned HTTP {r.status_code}"
+                )
     except Exception as e:
-        table.add_row("Ollama Service", "[red]✖ FAIL[/red]", f"Unreachable at {cfg.ollama_url}: {e}")
+        table.add_row(
+            "Ollama Service", "[red]✖ FAIL[/red]", f"Unreachable at {cfg.ollama_url}: {e}"
+        )
 
     # 2. CPU & Memory
     try:
@@ -374,6 +442,7 @@ def doctor_command():
     gpu_info = "No NVIDIA GPU detected or PyNVML unavailable"
     try:
         import pynvml
+
         pynvml.nvmlInit()
         device_count = pynvml.nvmlDeviceGetCount()
         if device_count > 0:
@@ -400,7 +469,9 @@ def doctor_command():
         with httpx.Client(timeout=4.0) as client:
             r = client.get(http_url)
             if r.status_code == 200:
-                table.add_row("Cloud Gateway", "[green]✔ PASS[/green]", f"Reachable at {cfg.http_url}")
+                table.add_row(
+                    "Cloud Gateway", "[green]✔ PASS[/green]", f"Reachable at {cfg.http_url}"
+                )
             else:
                 table.add_row("Cloud Gateway", "[yellow]⚠ WARN[/yellow]", f"HTTP {r.status_code}")
     except Exception as e:
@@ -428,7 +499,9 @@ def config_view():
         syntax = Syntax(content, "toml", theme="monokai", line_numbers=True)
         console.print(Panel(syntax, title=f"Config Path: {cfg_file}", border_style="cyan"))
     else:
-        console.print(f"[yellow]Config file does not exist yet. Current defaults:[/yellow]\n{cfg.to_dict()}")
+        console.print(
+            f"[yellow]Config file does not exist yet. Current defaults:[/yellow]\n{cfg.to_dict()}"
+        )
 
 
 @config_group.command("get")
@@ -440,7 +513,9 @@ def config_get(key: str):
     if key in cfg_dict:
         console.print(f"[bold cyan]{key}[/bold cyan] = [yellow]{cfg_dict[key]}[/yellow]")
     else:
-        console.print(f"[bold red]Unknown configuration key '{key}'. Available keys: {list(cfg_dict.keys())}[/bold red]")
+        console.print(
+            f"[bold red]Unknown configuration key '{key}'. Available keys: {list(cfg_dict.keys())}[/bold red]"
+        )
 
 
 @config_group.command("set")
@@ -452,7 +527,9 @@ def config_set(key: str, value: str):
     cfg_dict = cfg.to_dict()
 
     if key not in cfg_dict:
-        console.print(f"[bold red]Unknown configuration key '{key}'. Available keys: {list(cfg_dict.keys())}[/bold red]")
+        console.print(
+            f"[bold red]Unknown configuration key '{key}'. Available keys: {list(cfg_dict.keys())}[/bold red]"
+        )
         return
 
     old_val = cfg_dict[key]
@@ -494,7 +571,9 @@ def pull_command(model: str):
         with httpx.Client(timeout=None) as client:
             with client.stream("POST", url, json={"name": model, "stream": True}) as response:
                 if response.status_code != 200:
-                    console.print(f"[bold red]Pull failed ({response.status_code}): {response.read()}[/bold red]")
+                    console.print(
+                        f"[bold red]Pull failed ({response.status_code}): {response.read()}[/bold red]"
+                    )
                     return
 
                 tasks: Dict[str, Any] = {}
@@ -528,7 +607,9 @@ def pull_command(model: str):
                         except json.JSONDecodeError:
                             continue
 
-        console.print(f"[bold green]✔ Model '{model}' successfully pulled and verified![/bold green]")
+        console.print(
+            f"[bold green]✔ Model '{model}' successfully pulled and verified![/bold green]"
+        )
     except Exception as e:
         console.print(f"[bold red]Error pulling model '{model}': {e}[/bold red]")
 
@@ -544,7 +625,9 @@ def stop_command():
         console.print("[yellow]Zephyr runtime node is already stopped.[/yellow]")
         return
 
-    console.print("[bold yellow]Draining active jobs and sending disconnect signal...[/bold yellow]")
+    console.print(
+        "[bold yellow]Draining active jobs and sending disconnect signal...[/bold yellow]"
+    )
     config_mgr.update_runtime_state(status="stopped", active_api_key=None, key_expires_at=None)
     console.print("[bold green]✔ Zephyr runtime node gracefully stopped.[/bold green]")
 

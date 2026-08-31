@@ -87,6 +87,21 @@ Execute an exhaustive audit of all edge cases:
 - Verify that error responses in inference adapters conform to `JobErrorPayload`.
 """
 
+SCORE_INSTRUCTIONS = """
+### 6. 🏆 Code Quality & Architectural Readiness Score
+Calculate and output an objective numerical production-readiness score from 0 to 100:
+**Overall Score: [Score] / 100**
+
+Provide a strict, transparent point breakdown (0 to 20 points for each category):
+- **Protocol Adherence & Schema Safety**: [X]/20 (Pydantic V2 validation, envelope invariants, strict forbid)
+- **Concurrency & Async Integrity**: [X]/20 (Thread safety, locks on shared metrics/dicts, non-blocking event loop)
+- **Resource Lifecycle & Socket Safety**: [X]/20 (Process cleanup, timeouts, WebSocket connection safety)
+- **Hardware Telemetry & Fallback Robustness**: [X]/20 (Graceful parsing of non-numeric hardware data, zero division guards)
+- **Code Cleanliness & Zero-Trust Security**: [X]/20 (No hardcoded credentials, secret masking, docstrings, type hints)
+
+*Score Verdict*: Provide a 1-sentence scoring rationale and production-readiness summary.
+"""
+
 
 def get_git_diff(base_branch: str = "main", head_ref: str = "HEAD") -> str:
     """Retrieve git diff between base and head."""
@@ -240,6 +255,7 @@ async def main() -> None:
     parser.add_argument("--head", default="HEAD", help="Head commit or branch (default: HEAD)")
     parser.add_argument("--diff-file", help="Path to pre-extracted diff file instead of git")
     parser.add_argument("--deep", action="store_true", help="Execute deep architectural & safety audit")
+    parser.add_argument("--score", action="store_true", default=True, help="Include detailed 0-100 Code Quality & Architectural Readiness Score")
     parser.add_argument("--model", default="gemini-2.5-flash", help="Model identifier (default: gemini-2.5-flash)")
     parser.add_argument("--output", help="Path to write markdown output report")
     parser.add_argument("--post-comment", action="store_true", help="Post review comment directly to GitHub PR")
@@ -273,6 +289,8 @@ async def main() -> None:
     system_instructions = ZEPHYR_REVIEW_INSTRUCTIONS
     if args.deep:
         system_instructions += DEEP_CHECK_ADDENDUM
+    if args.score:
+        system_instructions += SCORE_INSTRUCTIONS
 
     user_prompt = f"Please perform a full review and deep check of the following PR code diff for Zephyr SDK:\n\n```diff\n{diff_text}\n```\n"
     if args.additional_context:

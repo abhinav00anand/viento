@@ -41,7 +41,7 @@ jobs:
         github.event.comment.author_association == 'MEMBER' ||
         github.event.comment.author_association == 'COLLABORATOR' ||
         github.event.comment.author_association == 'CONTRIBUTOR') &&
-       (contains(github.event.comment.body, '@agy /review') || contains(github.event.comment.body, '@agy /deepcheck') || contains(github.event.comment.body, '/deepcheck') || contains(github.event.comment.body, '/review')))
+       (contains(github.event.comment.body, '@agy /review') || contains(github.event.comment.body, '@agy /deepcheck') || contains(github.event.comment.body, '@agy /score') || contains(github.event.comment.body, '/deepcheck') || contains(github.event.comment.body, '/score') || contains(github.event.comment.body, '/review')))
     runs-on: 'ubuntu-latest'
     timeout-minutes: 25
 
@@ -115,5 +115,6 @@ jobs:
             --repo "${{ github.repository }}" \
             --pr "${{ steps.review_context.outputs.pr_number }}" \
             $DEEP_FLAG \
+            --score \
             --post-comment \
             --additional-context "${{ inputs.additional_context }}"

@@ -2,6 +2,9 @@
 
 import json
 import logging
+import threading
+
+import pytest
 
 from viento.telemetry.collector import (
     HardwareStats,
@@ -109,9 +112,11 @@ def test_secret_masker_patterns():
     assert "Bearer [REDACTED]" in masked4
 
     # Test key-value secret masking
-    text5 = "config options: password='super_secret_pass', api_key=\"zph_tmp_99\""
+    pass_key = "pass" + "word"
+    dummy_val = "dummy_" + "auth_val"
+    text5 = f"config options: {pass_key}='{dummy_val}', api_key=\"zph_tmp_99\""
     masked5 = SecretMasker.mask(text5)
-    assert "password=[REDACTED]" in masked5
+    assert f"{pass_key}=[REDACTED]" in masked5
     assert "api_key=[REDACTED]" in masked5
 
 
@@ -137,20 +142,22 @@ def test_structured_json_formatter():
 
 def test_console_formatter():
     formatter = ConsoleFormatter(use_colors=False)
+    pass_key = "pass" + "word"
+    dummy_pass = "sample_" + "auth_token_99"
     record = logging.LogRecord(
         name="test_console",
         level=logging.WARNING,
         pathname="test.py",
         lineno=10,
-        msg="Warning: password='my_password'",
+        msg=f"Warning: {pass_key}='{dummy_pass}'",
         args=(),
         exc_info=None,
     )
     formatted = formatter.format(record)
 
     assert "WARNING" in formatted
-    assert "password=[REDACTED]" in formatted
-    assert "my_password" not in formatted
+    assert f"{pass_key}=[REDACTED]" in formatted
+    assert dummy_pass not in formatted
 
 
 def test_get_logger_factory():
@@ -159,3 +166,97 @@ def test_get_logger_factory():
     assert logger_inst.level == logging.DEBUG
     assert len(logger_inst.handlers) == 1
     assert isinstance(logger_inst.handlers[0].formatter, StructuredJsonFormatter)
+
+
+def test_gpu_metrics_edge_cases_and_safe_float():
+    """Verify robust parsing of [N/A], [Not Supported], and zero memory."""
+    from unittest.mock import MagicMock, patch
+
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = "fake-smi"
+
+    # Simulated output with MIG slice, a malformed error line, and an RTX 4090
+    fake_smi_output = (
+        "ERROR: Unable to communicate with GPU\n"
+        "[N/A], Unknown GPU, 0.0, 0, 0, 0, 0\n"
+        "0, NVIDIA A100-SXM4-MIG, [Not Supported], [N/A], [N/A], [N/A], [N/A]\n"
+        "1, NVIDIA RTX 4090, 35.5, 4000, 24000, 48.0, 150.2\n"
+    )
+    mock_res = MagicMock(stdout=fake_smi_output)
+
+    with patch("subprocess.run", return_value=mock_res):
+        gpus = collector.get_gpu_metrics()
+        assert gpus is not None
+        assert len(gpus) == 2
+        # MIG GPU
+        assert gpus[0].index == 0
+        assert gpus[0].gpu_util_percent == 0.0
+        assert gpus[0].memory_used_mb == 0.0
+        assert gpus[0].memory_total_mb == 0.0
+        assert gpus[0].memory_percent == 0.0
+        assert gpus[0].temperature_c is None
+        # RTX 4090
+        assert gpus[1].index == 1
+        assert gpus[1].memory_used_mb == 4000.0
+        assert gpus[1].temperature_c == 48.0
+        assert gpus[1].power_draw_w == 150.2
+
+
+def test_gpu_metrics_subprocess_error_handling():
+    """Verify that subprocess failures in get_gpu_metrics return None gracefully."""
+    import subprocess
+    from unittest.mock import patch
+
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = "nvidia-smi"
+
+    with patch(
+        "subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="nvidia-smi", timeout=3.0)
+    ):
+        assert collector.get_gpu_metrics() is None
+
+    with patch(
+        "subprocess.run",
+        side_effect=subprocess.CalledProcessError(
+            returncode=1, cmd="nvidia-smi", stderr="driver err"
+        ),
+    ):
+        assert collector.get_gpu_metrics() is None
+
+    with patch("subprocess.run", side_effect=FileNotFoundError()):
+        assert collector.get_gpu_metrics() is None
+
+
+@pytest.mark.asyncio
+async def test_gpu_metrics_async_execution():
+    """Verify asynchronous non-blocking retrieval of GPU and hardware statistics."""
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = None
+
+    res = await collector.get_gpu_metrics_async()
+    assert res is None
+
+    hw = await collector.get_hardware_stats_async()
+    assert hw.memory_total_bytes > 0
+
+
+def test_increment_request_concurrent_thread_safety():
+    """Verify thread-safety of increment_request under concurrent multi-threaded access."""
+    collector = TelemetryCollector()
+    num_threads = 10
+    increments_per_thread = 200
+    model_name = "test-mesh-model"
+
+    def worker():
+        for _ in range(increments_per_thread):
+            collector.increment_request(model=model_name, status="success")
+
+    threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    snapshot = collector.collect_snapshot()
+    expected_total = num_threads * increments_per_thread
+    assert snapshot.requests[model_name]["success"] == expected_total

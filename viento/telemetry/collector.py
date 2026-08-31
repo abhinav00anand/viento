@@ -1,10 +1,12 @@
 """Hardware telemetry collector, request counters, and latency histogram tracking."""
 
+import asyncio
 import logging
 import math
 import os
 import shutil
 import subprocess
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -45,6 +47,7 @@ class HardwareStats:
 @dataclass
 class TelemetrySnapshot:
     """A point-in-time snapshot of telemetry metrics."""
+
     active_jobs_count: int
     hardware: HardwareStats
     requests: Dict[str, Dict[str, int]]
@@ -55,16 +58,18 @@ class TelemetrySnapshot:
         gpu_list = []
         if self.hardware.gpus:
             for g in self.hardware.gpus:
-                gpu_list.append({
-                    "index": g.index,
-                    "name": g.name,
-                    "gpu_util_percent": g.gpu_util_percent,
-                    "memory_used_mb": g.memory_used_mb,
-                    "memory_total_mb": g.memory_total_mb,
-                    "memory_percent": g.memory_percent,
-                    "temperature_c": g.temperature_c,
-                    "power_draw_w": g.power_draw_w,
-                })
+                gpu_list.append(
+                    {
+                        "index": g.index,
+                        "name": g.name,
+                        "gpu_util_percent": g.gpu_util_percent,
+                        "memory_used_mb": g.memory_used_mb,
+                        "memory_total_mb": g.memory_total_mb,
+                        "memory_percent": g.memory_percent,
+                        "temperature_c": g.temperature_c,
+                        "power_draw_w": g.power_draw_w,
+                    }
+                )
         return {
             "timestamp": self.hardware.timestamp,
             "hardware": {
@@ -150,6 +155,7 @@ class TelemetryCollector:
 
     def __init__(self):
         self._request_counters: Dict[str, Dict[str, int]] = {}  # model -> {status -> count}
+        self._counter_lock = threading.Lock()
         self._latency_histograms: Dict[str, LatencyHistogram] = {}  # operation -> histogram
         self._nvidia_smi_path: Optional[str] = shutil.which("nvidia-smi")
 
@@ -191,6 +197,24 @@ class TelemetryCollector:
                 "memory_percent": 0.0,
             }
 
+    @staticmethod
+    def _safe_float(value: str, default: Optional[float] = 0.0) -> Optional[float]:
+        """Safely parse float from nvidia-smi csv output, handling [N/A] and [Not Supported].
+
+        Args:
+            value: The string metric value from nvidia-smi output.
+            default: Fallback float value if unparseable or unknown.
+
+        Returns:
+            The parsed float value, or the default value if parsing fails.
+        """
+        if not value or value.startswith("[") or value.lower() in ("n/a", "unknown"):
+            return default
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return default
+
     def get_gpu_metrics(self) -> Optional[List[GPUStat]]:
         """Collects GPU statistics via nvidia-smi subprocess query if available."""
         if not self._nvidia_smi_path:
@@ -202,22 +226,25 @@ class TelemetryCollector:
             "--format=csv,noheader,nounits",
         ]
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, check=True, timeout=3.0
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=3.0)
             gpus = []
             for line in result.stdout.strip().splitlines():
                 if not line.strip():
                     continue
                 parts = [p.strip() for p in line.split(",")]
                 if len(parts) >= 5:
+                    if not parts[0].isdigit():
+                        logger.warning(
+                            f"Skipping malformed nvidia-smi line with non-digit GPU index: '{line.strip()}'"
+                        )
+                        continue
                     idx = int(parts[0])
                     name = parts[1]
-                    util = float(parts[2]) if parts[2] != "[N/A]" else 0.0
-                    mem_used = float(parts[3]) if parts[3] != "[N/A]" else 0.0
-                    mem_total = float(parts[4]) if parts[4] != "[N/A]" else 1.0
-                    temp = float(parts[5]) if len(parts) > 5 and parts[5] != "[N/A]" else None
-                    power = float(parts[6]) if len(parts) > 6 and parts[6] != "[N/A]" else None
+                    util = self._safe_float(parts[2], default=0.0)
+                    mem_used = self._safe_float(parts[3], default=0.0)
+                    mem_total = self._safe_float(parts[4], default=0.0)
+                    temp = self._safe_float(parts[5], default=None) if len(parts) > 5 else None
+                    power = self._safe_float(parts[6], default=None) if len(parts) > 6 else None
 
                     mem_percent = (mem_used / mem_total * 100.0) if mem_total > 0 else 0.0
 
@@ -234,8 +261,25 @@ class TelemetryCollector:
                         )
                     )
             return gpus if gpus else None
+        except FileNotFoundError:
+            # Log as INFO because this is a common and expected scenario on non-GPU systems.
+            logger.info("nvidia-smi executable not found, skipping GPU metrics collection.")
+            return None
+        except subprocess.TimeoutExpired:
+            logger.warning("nvidia-smi query timed out after 3.0 seconds.")
+            return None
+        except subprocess.CalledProcessError as e:
+            err_msg = (
+                e.stderr.decode(errors="ignore").strip()
+                if isinstance(e.stderr, bytes)
+                else str(e.stderr or "").strip()
+            )
+            logger.warning(f"nvidia-smi query failed with code {e.returncode}: {err_msg}")
+            return None
         except Exception as e:
-            logger.debug(f"nvidia-smi query failed: {e}")
+            # Catch-all for any other unexpected parsing or runtime errors.
+            # Log as WARNING to ensure visibility for truly unexpected issues.
+            logger.warning(f"Unexpected error querying nvidia-smi: {e}", exc_info=True)
             return None
 
     def get_hardware_stats(self) -> HardwareStats:
@@ -259,13 +303,20 @@ class TelemetryCollector:
         """Returns HardwareStats data class snapshot. Alias for get_hardware_stats."""
         return self.get_hardware_stats()
 
+    async def get_gpu_metrics_async(self) -> Optional[List[GPUStat]]:
+        """Asynchronously collects GPU statistics offloading subprocess execution to a worker thread."""
+        return await asyncio.to_thread(self.get_gpu_metrics)
+
+    async def get_hardware_stats_async(self) -> HardwareStats:
+        """Asynchronously collects all hardware statistics without blocking the async event loop."""
+        return await asyncio.to_thread(self.get_hardware_stats)
+
     def increment_request(self, model: str, status: str = "success") -> None:
-        """Increments request counter for model and status."""
-        if model not in self._request_counters:
-            self._request_counters[model] = {}
-        self._request_counters[model][status] = (
-            self._request_counters[model].get(status, 0) + 1
-        )
+        """Increments request counter for model and status in a thread-safe manner."""
+        with self._counter_lock:
+            if model not in self._request_counters:
+                self._request_counters[model] = {}
+            self._request_counters[model][status] = self._request_counters[model].get(status, 0) + 1
 
     def record_latency(self, operation: str, latency_ms: float) -> None:
         """Records latency for operation in latency histogram."""
@@ -276,13 +327,15 @@ class TelemetryCollector:
     def collect_snapshot(self) -> TelemetrySnapshot:
         """Returns a snapshot of the current telemetry stats."""
         hw = self.get_hardware_stats()
-        latencies = {
-            op: hist.summary() for op, hist in self._latency_histograms.items()
-        }
+        latencies = {op: hist.summary() for op, hist in self._latency_histograms.items()}
+        with self._counter_lock:
+            requests_copy = {
+                model: dict(counts) for model, counts in self._request_counters.items()
+            }
         return TelemetrySnapshot(
             active_jobs_count=0,
             hardware=hw,
-            requests=self._request_counters,
+            requests=requests_copy,
             latencies=latencies,
         )
 

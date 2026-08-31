@@ -82,17 +82,21 @@ class OllamaAdapter(InferenceBackend):
             data = res.json()
             models = []
             for item in data.get("models", []):
-                models.append({
-                    "id": item.get("name"),
-                    "name": item.get("name"),
-                    "status": "ready",
-                    "backend": "ollama",
-                    "context_length": 8192,
-                    "quantization": item.get("details", {}).get("quantization_level", "unknown"),
-                    "capabilities": ["chat", "streaming", "embeddings"],
-                    "max_concurrency": 2,
-                    "active_jobs": 0,
-                })
+                models.append(
+                    {
+                        "id": item.get("name"),
+                        "name": item.get("name"),
+                        "status": "ready",
+                        "backend": "ollama",
+                        "context_length": 8192,
+                        "quantization": item.get("details", {}).get(
+                            "quantization_level", "unknown"
+                        ),
+                        "capabilities": ["chat", "streaming", "embeddings"],
+                        "max_concurrency": 2,
+                        "active_jobs": 0,
+                    }
+                )
             return models
         except Exception as exc:
             logger.error("Failed to list Ollama models: %s", exc)
@@ -173,7 +177,7 @@ class OllamaAdapter(InferenceBackend):
             handle.mark_done()
             res.close()
 
-        is_estimated = (prompt_tokens == 0 and completion_tokens == 0)
+        is_estimated = prompt_tokens == 0 and completion_tokens == 0
         if is_estimated:
             completion_tokens = chunk_idx
             total_tokens = completion_tokens
@@ -206,7 +210,9 @@ class OllamaAdapter(InferenceBackend):
 
             if res.status_code != 200:
                 res.close()
-                req = self._client.build_request("POST", "/api/embed", json={"model": model, "input": input_text})
+                req = self._client.build_request(
+                    "POST", "/api/embed", json={"model": model, "input": input_text}
+                )
                 res = self._client.send(req, stream=True)
                 if res.status_code != 200:
                     res.close()

@@ -14,6 +14,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 try:
     import websockets
+
     try:
         from websockets.asyncio.client import ClientConnection as WebSocketClientProtocol
     except ImportError:
@@ -185,7 +186,9 @@ class ConnectionManager:
                             max_concurrency=self.config.max_concurrency,
                         )
                     )
-            logger.info(f"Discovered models via backend '{self.backend.name()}': {[m.name for m in model_infos]}")
+            logger.info(
+                f"Discovered models via backend '{self.backend.name()}': {[m.name for m in model_infos]}"
+            )
             return model_infos
         except Exception as e:
             logger.warning(f"Could not discover models from backend '{self.backend.name()}': {e}")
@@ -200,10 +203,18 @@ class ConnectionManager:
             self.expected_incoming_sequence += 1
             return True
         elif incoming_seq < expected:
-            logger.warning("SDK received duplicate frame seq %d (expected %d). Ignoring.", incoming_seq, expected)
+            logger.warning(
+                "SDK received duplicate frame seq %d (expected %d). Ignoring.",
+                incoming_seq,
+                expected,
+            )
             return False
         else:
-            logger.error("SDK sequence gap: received seq %d (expected %d). Disconnecting.", incoming_seq, expected)
+            logger.error(
+                "SDK sequence gap: received seq %d (expected %d). Disconnecting.",
+                incoming_seq,
+                expected,
+            )
             self.is_connected = False
             return False
 
@@ -368,7 +379,12 @@ class ConnectionManager:
                                 self.on_job_cancel_callback(job_id)
                         # Transmit CANCEL_ACK ONLY AFTER cancellation processing is complete!
                         await self.send_cancel_ack(job_id, envelope.request_id)
-                elif msg_type in (FrameType.HEARTBEAT_ACK, FrameType.REGISTER_ACK, FrameType.CANCEL_ACK, FrameType.JOB_ACK):
+                elif msg_type in (
+                    FrameType.HEARTBEAT_ACK,
+                    FrameType.REGISTER_ACK,
+                    FrameType.CANCEL_ACK,
+                    FrameType.JOB_ACK,
+                ):
                     pass
                 elif msg_type in (FrameType.DISCONNECT,):
                     logger.info("Received disconnect request from cloud gateway.")
@@ -384,7 +400,9 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"Error processing frame: {e}")
 
-    async def send_job_ack(self, job_id: str, request_id: Optional[str] = None, queue_position: int = 0) -> None:
+    async def send_job_ack(
+        self, job_id: str, request_id: Optional[str] = None, queue_position: int = 0
+    ) -> None:
         payload = JobAckPayload(status="accepted", queue_position=queue_position)
         envelope = ProtocolEnvelope(
             type=FrameType.JOB_ACK,
@@ -405,7 +423,12 @@ class ConnectionManager:
         await self.send_envelope(envelope)
 
     async def send_job_chunk(
-        self, job_id: str, chunk: str, request_id: Optional[str] = None, index: int = 0, is_final: bool = False
+        self,
+        job_id: str,
+        chunk: str,
+        request_id: Optional[str] = None,
+        index: int = 0,
+        is_final: bool = False,
     ) -> None:
         payload = TokenChunkPayload(
             delta=chunk,
@@ -464,8 +487,12 @@ class ConnectionManager:
         await self.send_envelope(envelope)
 
     async def send_job_error(
-        self, job_id: str, error_message: str = "", error_code: str = "runtime_error",
-        request_id: Optional[str] = None, error: Optional[str] = None,
+        self,
+        job_id: str,
+        error_message: str = "",
+        error_code: str = "runtime_error",
+        request_id: Optional[str] = None,
+        error: Optional[str] = None,
     ) -> None:
         # Support both `error` (legacy) and `error_message` (canonical) keyword args
         msg = error_message or error or "Unknown runtime error"

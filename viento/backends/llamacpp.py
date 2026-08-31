@@ -79,7 +79,9 @@ class LlamaCppAdapter(InferenceBackend):
             resp_props = self._client.get("/props")
             if resp_props.status_code == 200:
                 props = resp_props.json()
-                default_name = props.get("default_generation_settings", {}).get("model", "llama.cpp-model")
+                default_name = props.get("default_generation_settings", {}).get(
+                    "model", "llama.cpp-model"
+                )
                 return [{"id": default_name, "object": "model", "owned_by": "llama.cpp"}]
 
             return [{"id": "llama.cpp-default", "object": "model"}]
@@ -210,7 +212,9 @@ class LlamaCppAdapter(InferenceBackend):
         try:
             body_bytes = res.read()
             if handle._cancelled:
-                return EmbeddingResult(embeddings=[], prompt_tokens=0, total_tokens=0, is_estimated=False)
+                return EmbeddingResult(
+                    embeddings=[], prompt_tokens=0, total_tokens=0, is_estimated=False
+                )
             data = json.loads(body_bytes)
             items = data.get("data", [])
             embeddings_list = [item.get("embedding", []) for item in items]
@@ -218,7 +222,7 @@ class LlamaCppAdapter(InferenceBackend):
             prompt_tokens = usage.get("prompt_tokens", 0)
             total_tokens = usage.get("total_tokens", prompt_tokens)
 
-            is_estimated = (prompt_tokens == 0)
+            is_estimated = prompt_tokens == 0
             if is_estimated:
                 prompt_tokens = sum(len(t) // 4 for t in inputs)
                 total_tokens = prompt_tokens

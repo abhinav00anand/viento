@@ -21,7 +21,10 @@ class SecretMasker:
         (re.compile(r"(Bearer\s+)[A-Za-z0-9._\-]+", re.IGNORECASE), r"\1[REDACTED]"),
         # Password / secret key-value pairs
         (
-            re.compile(r"(password|token|secret|api_key|auth_token)\s*=\s*['\"]?[^'\"\s,]+['\"]?", re.IGNORECASE),
+            re.compile(
+                r"(password|token|secret|api_key|auth_token)\s*=\s*['\"]?[^'\"\s,]+['\"]?",
+                re.IGNORECASE,
+            ),
             r"\1=[REDACTED]",
         ),
     ]
@@ -95,10 +98,10 @@ class ConsoleFormatter(logging.Formatter):
     """Console formatter with color coding and secret masking."""
 
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
         "RESET": "\033[0m",
     }

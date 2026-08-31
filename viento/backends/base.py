@@ -13,26 +13,31 @@ from pydantic import BaseModel
 
 class BackendError(Exception):
     """Base exception for inference backend errors."""
+
     pass
 
 
 class BackendOfflineError(BackendError):
     """Raised when the backend server is unreachable or offline."""
+
     pass
 
 
 class BackendTimeoutError(BackendError):
     """Raised when request times out on backend."""
+
     pass
 
 
 class ModelNotFoundError(BackendError):
     """Raised when a requested model is not found on the backend."""
+
     pass
 
 
 class ContextLengthExceededError(BackendError):
     """Raised when request prompt tokens exceed backend context length limits."""
+
     pass
 
 

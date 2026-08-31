@@ -34,6 +34,7 @@ def get_default_node_name() -> str:
     """Generate a machine-unique node name using hostname + short UUID fragment."""
     import socket
     import uuid
+
     hostname = socket.gethostname().split(".")[0].lower().replace("_", "-")[:12]
     uid = uuid.uuid4().hex[:6]
     return f"zephyr-node-{hostname}-{uid}"
@@ -164,7 +165,9 @@ class ConfigManager:
                 with open(self.config_path, "wb") as f:
                     tomli_w.dump(d, f)
             else:
-                lines = [f'{k} = "{v}"' if isinstance(v, str) else f'{k} = {v}' for k, v in d.items()]
+                lines = [
+                    f'{k} = "{v}"' if isinstance(v, str) else f"{k} = {v}" for k, v in d.items()
+                ]
                 self.config_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
             logger.info("Saved configuration to %s", self.config_path)
         except Exception as exc:
@@ -203,6 +206,7 @@ class ConfigManager:
         if state.key_expires_at is None:
             return 0.0
         import time
+
         remaining = state.key_expires_at - time.time()
         return max(0.0, remaining)
 

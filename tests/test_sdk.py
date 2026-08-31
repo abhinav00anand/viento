@@ -112,12 +112,19 @@ async def test_running_job_cancellation_aborts_handle_and_suppresses_complete():
     job_started_ev = threading.Event()
     job_can_finish_ev = threading.Event()
 
-    def slow_generate(job_id, model, messages, temperature, max_tokens, callback, stop, handle_callback):
+    def slow_generate(
+        job_id, model, messages, temperature, max_tokens, callback, stop, handle_callback
+    ):
         if handle_callback:
             handle_callback(handle_mock)
         job_started_ev.set()
         job_can_finish_ev.wait(timeout=2.0)
-        return GenerationResult(full_text="hello", prompt_tokens=2, completion_tokens=1, total_tokens=3), handle_mock
+        return (
+            GenerationResult(
+                full_text="hello", prompt_tokens=2, completion_tokens=1, total_tokens=3
+            ),
+            handle_mock,
+        )
 
     backend.generate.side_effect = slow_generate
 
@@ -181,7 +188,9 @@ def test_client_headers_and_init():
 
 
 def test_async_client_headers_and_init():
-    async_client = AsyncVientoClient(base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123")
+    async_client = AsyncVientoClient(
+        base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123"
+    )
     assert async_client.api_key == "zph_tmp_123"
     headers = async_client._headers()
     assert "Authorization" in headers

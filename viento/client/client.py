@@ -185,7 +185,9 @@ class VientoClient:
         api_key: Optional[str] = None,
         timeout: float = 60.0,
     ):
-        self.base_url = (base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")).rstrip("/")
+        self.base_url = (
+            base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")
+        ).rstrip("/")
         self.api_key = api_key or os.getenv("ZEPHYR_API_KEY", "")
         self.timeout = timeout
 
@@ -283,6 +285,7 @@ class VientoClient:
                             break
                         try:
                             import json
+
                             data = json.loads(content_str)
                             chunk_choices = [
                                 ChatChunkChoice(
@@ -318,7 +321,10 @@ class VientoClient:
         url = f"{self.base_url}/healthz"
         with httpx.Client(timeout=5.0) as client:
             res = client.get(url)
-            return {"status_code": res.status_code, "data": res.json() if res.status_code == 200 else res.text}
+            return {
+                "status_code": res.status_code,
+                "data": res.json() if res.status_code == 200 else res.text,
+            }
 
 
 class AsyncVientoClient:
@@ -332,7 +338,9 @@ class AsyncVientoClient:
         api_key: Optional[str] = None,
         timeout: float = 60.0,
     ):
-        self.base_url = (base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")).rstrip("/")
+        self.base_url = (
+            base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")
+        ).rstrip("/")
         self.api_key = api_key or os.getenv("ZEPHYR_API_KEY", "")
         self.timeout = timeout
 
@@ -429,6 +437,7 @@ class AsyncVientoClient:
                             break
                         try:
                             import json
+
                             data = json.loads(content_str)
                             chunk_choices = [
                                 ChatChunkChoice(
@@ -462,4 +471,7 @@ class AsyncVientoClient:
         url = f"{self.base_url}/healthz"
         async with httpx.AsyncClient(timeout=5.0) as client:
             res = await client.get(url)
-            return {"status_code": res.status_code, "data": res.json() if res.status_code == 200 else res.text}
+            return {
+                "status_code": res.status_code,
+                "data": res.json() if res.status_code == 200 else res.text,
+            }

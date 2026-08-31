@@ -60,11 +60,14 @@ def test_generate_streaming_token_callbacks(adapter):
     mock_resp.iter_lines.return_value = lines
 
     received = []
+
     def cb(chunk):
         received.append(chunk.delta)
 
-    with patch.object(adapter._client, "build_request"), \
-         patch.object(adapter._client, "send", return_value=mock_resp):
+    with (
+        patch.object(adapter._client, "build_request"),
+        patch.object(adapter._client, "send", return_value=mock_resp),
+    ):
         result, handle = adapter.generate(
             job_id="job_ollama",
             model="llama3:latest",
@@ -79,10 +82,14 @@ def test_generate_streaming_token_callbacks(adapter):
 def test_embeddings_success(adapter):
     mock_resp = MagicMock(spec=httpx.Response)
     mock_resp.status_code = 200
-    mock_resp.read.return_value = json.dumps({"embedding": [0.1, 0.2, 0.3], "prompt_eval_count": 3}).encode("utf-8")
+    mock_resp.read.return_value = json.dumps(
+        {"embedding": [0.1, 0.2, 0.3], "prompt_eval_count": 3}
+    ).encode("utf-8")
 
-    with patch.object(adapter._client, "build_request"), \
-         patch.object(adapter._client, "send", return_value=mock_resp):
+    with (
+        patch.object(adapter._client, "build_request"),
+        patch.object(adapter._client, "send", return_value=mock_resp),
+    ):
         res = adapter.embeddings("llama3:latest", ["Embedding text"])
         assert res.embeddings == [[0.1, 0.2, 0.3]]
         assert res.prompt_tokens == 3
