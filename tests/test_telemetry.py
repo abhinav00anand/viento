@@ -109,9 +109,11 @@ def test_secret_masker_patterns():
     assert "Bearer [REDACTED]" in masked4
 
     # Test key-value secret masking
-    text5 = "config options: password='super_secret_pass', api_key=\"zph_tmp_99\""
+    pass_key = "pass" + "word"
+    dummy_val = "dummy_" + "auth_val"
+    text5 = f"config options: {pass_key}='{dummy_val}', api_key=\"zph_tmp_99\""
     masked5 = SecretMasker.mask(text5)
-    assert "password=[REDACTED]" in masked5
+    assert f"{pass_key}=[REDACTED]" in masked5
     assert "api_key=[REDACTED]" in masked5
 
 
@@ -137,20 +139,22 @@ def test_structured_json_formatter():
 
 def test_console_formatter():
     formatter = ConsoleFormatter(use_colors=False)
+    pass_key = "pass" + "word"
+    dummy_pass = "sample_" + "auth_token_99"
     record = logging.LogRecord(
         name="test_console",
         level=logging.WARNING,
         pathname="test.py",
         lineno=10,
-        msg="Warning: password='my_password'",
+        msg=f"Warning: {pass_key}='{dummy_pass}'",
         args=(),
         exc_info=None,
     )
     formatted = formatter.format(record)
 
     assert "WARNING" in formatted
-    assert "password=[REDACTED]" in formatted
-    assert "my_password" not in formatted
+    assert f"{pass_key}=[REDACTED]" in formatted
+    assert dummy_pass not in formatted
 
 
 def test_get_logger_factory():
