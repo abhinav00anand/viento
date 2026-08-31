@@ -127,6 +127,22 @@ Before opening a PR, ensure:
 
 ---
 
+## Automated AI Reviews (Antigravity)
+
+All Pull Requests are automatically reviewed by the **Antigravity PR Review Agent**:
+- **Automated First Pass**: Runs on PR creation and updates, validating against Zephyr SDK architectural standards, typing, and formatting.
+- **On-Demand Review**: Triggered anytime by commenting `@agy /review` on the PR.
+- **Deep Check Audit**: Comment `@agy /deepcheck` on the PR to run a rigorous deep audit covering:
+  - Canonical Envelope Protocol (V1.0) compatibility
+  - Async concurrency, deadlocks, and task leaks
+  - WebSocket and stream socket teardown
+  - Hardware fallback robustness in telemetry
+  - Zero-trust security and credential leaks
+
+See [docs/antigravity_pr_review.md](docs/antigravity_pr_review.md) for full details.
+
+---
+
 ## Running Tests
 
 ```bash

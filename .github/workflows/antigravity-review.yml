@@ -1,0 +1,119 @@
+name: '🤖 Antigravity PR Review & Deep Check'
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Pull Request number to review (optional, auto-detected if omitted)'
+        required: false
+        type: string
+      deep_check:
+        description: 'Perform deep architectural, concurrency, and protocol invariant audit'
+        required: false
+        type: boolean
+        default: true
+      additional_context:
+        description: 'Additional instructions or focus areas for the review'
+        required: false
+        type: string
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref_name }}'
+  cancel-in-progress: true
+
+jobs:
+  antigravity-review:
+    name: 'Antigravity Code Review & Deep Check'
+    # Run on:
+    # 1) PR events (same repository)
+    # 2) Issue comments on a PR containing '@agy /review' or '@agy /deepcheck'
+    # 3) Manual workflow dispatch
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       (github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR' ||
+        github.event.comment.author_association == 'CONTRIBUTOR') &&
+       (contains(github.event.comment.body, '@agy /review') || contains(github.event.comment.body, '@agy /deepcheck') || contains(github.event.comment.body, '/deepcheck') || contains(github.event.comment.body, '/review')))
+    runs-on: 'ubuntu-latest'
+    timeout-minutes: 25
+
+    permissions:
+      contents: 'read'
+      pull-requests: 'write'
+      issues: 'write'
+
+    steps:
+      - name: 'Checkout Repository'
+        uses: 'actions/checkout@v4'
+        with:
+          fetch-depth: 0
+
+      - name: 'Set up Python 3.11'
+        uses: 'actions/setup-python@v5'
+        with:
+          python-version: '3.11'
+
+      - name: 'Install Review Agent Dependencies'
+        run: |
+          python -m pip install --upgrade pip
+          pip install httpx pydantic
+          pip install google-antigravity || true
+
+      - name: 'Determine Review Scope & Context'
+        id: 'review_context'
+        run: |
+          IS_DEEP="false"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Default to deep check on PR events for thorough analysis
+            IS_DEEP="true"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ inputs.deep_check }}" == "true" ]]; then
+              IS_DEEP="true"
+            fi
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            COMMENT_BODY="${{ github.event.comment.body }}"
+            if [[ "$COMMENT_BODY" == *"@agy /deepcheck"* || "$COMMENT_BODY" == *"/deepcheck"* ]]; then
+              IS_DEEP="true"
+            fi
+          fi
+
+          echo "is_deep_check=${IS_DEEP}" >> $GITHUB_OUTPUT
+
+          PR_NUM=""
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            PR_NUM="${{ github.event.pull_request.number }}"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            PR_NUM="${{ github.event.issue.number }}"
+          elif [[ -n "${{ inputs.pull_request_number }}" ]]; then
+            PR_NUM="${{ inputs.pull_request_number }}"
+          fi
+
+          echo "pr_number=${PR_NUM}" >> $GITHUB_OUTPUT
+
+      - name: 'Execute Antigravity Review & Post PR Analysis'
+        env:
+          ANTIGRAVITY_API_KEY: ${{ secrets.ANTIGRAVITY_API_KEY || secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.ANTIGRAVITY_API_KEY || secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PULL_REQUEST_NUMBER: ${{ steps.review_context.outputs.pr_number }}
+        run: |
+          DEEP_FLAG=""
+          if [[ "${{ steps.review_context.outputs.is_deep_check }}" == "true" ]]; then
+            DEEP_FLAG="--deep"
+          fi
+
+          python scripts/review_agent.py \
+            --repo "${{ github.repository }}" \
+            --pr "${{ steps.review_context.outputs.pr_number }}" \
+            $DEEP_FLAG \
+            --post-comment \
+            --additional-context "${{ inputs.additional_context }}"
