@@ -253,7 +253,8 @@ class TelemetryCollector:
                     )
             return gpus if gpus else None
         except FileNotFoundError:
-            logger.debug("nvidia-smi executable not found, skipping GPU metrics collection.")
+            # Log as INFO because this is a common and expected scenario on non-GPU systems.
+            logger.info("nvidia-smi executable not found, skipping GPU metrics collection.")
             return None
         except subprocess.TimeoutExpired:
             logger.warning("nvidia-smi query timed out after 3.0 seconds.")
