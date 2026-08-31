@@ -268,7 +268,14 @@ class TelemetryCollector:
             logger.warning("nvidia-smi query timed out after 3.0 seconds.")
             return None
         except subprocess.CalledProcessError as e:
-            logger.debug(f"nvidia-smi query failed with code {e.returncode}: {e.stderr}")
+            err_msg = (
+                e.stderr.decode(errors="ignore").strip()
+                if isinstance(e.stderr, bytes)
+                else str(e.stderr or "").strip()
+            )
+            logger.warning(
+                f"nvidia-smi query failed with code {e.returncode}: {err_msg}"
+            )
             return None
         except Exception as e:
             # Catch-all for any other unexpected parsing or runtime errors.
