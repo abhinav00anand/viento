@@ -1,5 +1,6 @@
 """Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
 
+from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import (
     CancelAckPayload,
     CancelJobPayload,
@@ -151,3 +152,52 @@ def test_sequence_tracker_normal_flow():
     valid, err = tracker.track(session, 2)
     assert valid is True and err is None
     assert tracker.get_last_sequence(session) == 2
+
+
+def test_connection_sequence_state_survives_reconnect_for_same_session():
+    manager = object.__new__(ConnectionManager)
+    manager.next_outgoing_sequence = 0
+    manager.expected_incoming_sequence = 0
+    manager._sequence_session_id = None
+    manager._sequence_state_initialized = False
+
+    manager._sync_sequence_session("sess-001")
+    manager.next_outgoing_sequence = 8
+    manager.expected_incoming_sequence = 11
+
+    manager._sync_sequence_session("sess-001")
+
+    assert manager.next_outgoing_sequence == 8
+    assert manager.expected_incoming_sequence == 11
+    assert manager._sequence_session_id == "sess-001"
+
+
+def test_connection_sequence_state_resets_only_for_new_session():
+    manager = object.__new__(ConnectionManager)
+    manager.next_outgoing_sequence = 7
+    manager.expected_incoming_sequence = 9
+    manager._sequence_session_id = "sess-old"
+    manager._sequence_state_initialized = True
+
+    manager._sync_sequence_session("sess-new")
+
+    assert manager.next_outgoing_sequence == 0
+    assert manager.expected_incoming_sequence == 0
+    assert manager._sequence_session_id == "sess-new"
+
+
+def test_incoming_sequence_rejects_wrong_session():
+    manager = object.__new__(ConnectionManager)
+    manager.session_id = "sess-001"
+    manager.expected_incoming_sequence = 0
+    manager.is_connected = True
+
+    envelope = ProtocolEnvelope(
+        type=FrameType.HEARTBEAT_ACK,
+        session_id="sess-other",
+        sequence=0,
+        payload={"timestamp": 1.0},
+    )
+
+    assert manager._validate_incoming_sequence(envelope) is False
+    assert manager.is_connected is False

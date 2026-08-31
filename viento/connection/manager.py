@@ -49,6 +49,10 @@ logger = logging.getLogger("viento.connection")
 class ConnectionManager:
     """
     Supervisor managing persistent WebSocket connection with Zephyr Cloud gateway.
+
+    Sequence counters are scoped to the logical Zephyr session rather than the
+    underlying WebSocket connection. This allows reconnects to resume an
+    established session without silently replaying sequence numbers.
     """
 
     def __init__(
@@ -69,8 +73,11 @@ class ConnectionManager:
         self.active_api_key: Optional[str] = None
         self.key_expires_at: Optional[float] = None
 
+        # Sequence state is logical-session scoped and survives transport reconnects.
         self.next_outgoing_sequence: int = 0
         self.expected_incoming_sequence: int = 0
+        self._sequence_session_id: Optional[str] = None
+        self._sequence_state_initialized: bool = False
 
         self._heartbeat_task: Optional[asyncio.Task] = None
         self._shutdown_event: Optional[asyncio.Event] = None
@@ -81,6 +88,20 @@ class ConnectionManager:
         self.on_embedding_received_callback: Optional[Callable[[ProtocolEnvelope], None]] = None
         self.on_job_cancel_callback: Optional[Callable[[str], None]] = None
         self.on_disconnect_callback: Optional[Callable[[], None]] = None
+
+    def _reset_sequence_state(self, session_id: Optional[str]) -> None:
+        """Reset sequence counters only when the logical session changes."""
+        self._sequence_session_id = session_id
+        self.next_outgoing_sequence = 0
+        self.expected_incoming_sequence = 0
+        self._sequence_state_initialized = True
+
+    def _sync_sequence_session(self, session_id: Optional[str]) -> None:
+        """Synchronize sequence state with a newly established logical session."""
+        if not self._sequence_state_initialized:
+            self._reset_sequence_state(session_id)
+        elif session_id != self._sequence_session_id:
+            self._reset_sequence_state(session_id)
 
     def _get_next_sequence(self) -> int:
         seq = self.next_outgoing_sequence
@@ -124,8 +145,9 @@ class ConnectionManager:
                 ) as ws:
                     self.ws = ws
                     self.is_connected = True
-                    self.next_outgoing_sequence = 0
-                    self.expected_incoming_sequence = 0
+                    # Do not reset logical-session sequence counters on reconnect.
+                    # _perform_handshake() will establish a new sequence epoch only
+                    # when the gateway assigns a different session_id.
                     backoff = 1.0
 
                     handshake_success = await self._perform_handshake(models)
@@ -195,7 +217,16 @@ class ConnectionManager:
             return []
 
     def _validate_incoming_sequence(self, envelope: ProtocolEnvelope) -> bool:
-        """Validate incoming sequence number strictly per session direction."""
+        """Validate incoming sequence strictly within the active logical session."""
+        if self.session_id is None or envelope.session_id != self.session_id:
+            logger.error(
+                "Rejecting frame with session_id=%r for active session_id=%r.",
+                envelope.session_id,
+                self.session_id,
+            )
+            self.is_connected = False
+            return False
+
         incoming_seq = envelope.sequence
         expected = self.expected_incoming_sequence
 
@@ -220,12 +251,13 @@ class ConnectionManager:
 
     async def _perform_handshake(self, models: List[ModelInfo]) -> bool:
         try:
-            # 1. Send HELLO
+            # HELLO is sent using the currently known logical session (if any).
+            # Its sequence counter therefore remains monotonic across reconnects.
             hello_payload = HelloPayload(
                 runtime_id=self.config.node_name,
                 version="1.0.0",
                 auth_key=self.config.bootstrap_key or None,
-                session_id=self.session_id,  # Reconnect recovery hint
+                session_id=self.session_id,
             )
             hello_envelope = ProtocolEnvelope(
                 type=FrameType.HELLO,
@@ -240,11 +272,26 @@ class ConnectionManager:
                 logger.error(f"Expected WELCOME, got: {welcome_envelope.type}")
                 return False
 
-            if not self._validate_incoming_sequence(welcome_envelope):
+            # WELCOME carries the server-selected logical session. Synchronize
+            # sequence state before validating subsequent frames in that session.
+            p_welcome = welcome_envelope.payload
+            welcome_session_id = p_welcome.get("session_id")
+            if not welcome_session_id:
+                logger.error("WELCOME did not include a session_id")
                 return False
 
-            p_welcome = welcome_envelope.payload
-            self.session_id = p_welcome.get("session_id", f"sess_{int(time.time())}")
+            previous_session_id = self._sequence_session_id
+            self._sync_sequence_session(welcome_session_id)
+
+            # A changed session represents a fresh sequence epoch; validate WELCOME
+            # against the fresh epoch. For a resumed session, preserve the prior epoch
+            # and validate its next expected sequence.
+            if welcome_session_id != previous_session_id:
+                self.expected_incoming_sequence = welcome_envelope.sequence + 1
+            elif not self._validate_incoming_sequence(welcome_envelope):
+                return False
+
+            self.session_id = welcome_session_id
 
             # 2. Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
@@ -455,31 +502,6 @@ class ConnectionManager:
         )
         envelope = ProtocolEnvelope(
             type=FrameType.JOB_COMPLETE,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
-        await self.send_envelope(envelope)
-
-    async def send_embedding_response(
-        self,
-        job_id: str,
-        model: str,
-        embeddings: List[List[float]],
-        request_id: Optional[str] = None,
-        prompt_tokens: int = 0,
-        total_tokens: int = 0,
-        is_estimated: bool = False,
-    ) -> None:
-        payload = EmbeddingResponsePayload(
-            model=model,
-            embeddings=embeddings,
-            prompt_tokens=prompt_tokens,
-            total_tokens=total_tokens,
-            is_estimated=is_estimated,
-        )
-        envelope = ProtocolEnvelope(
-            type=FrameType.EMBEDDING_RESPONSE,
             request_id=request_id,
             job_id=job_id,
             payload=payload.model_dump(),
