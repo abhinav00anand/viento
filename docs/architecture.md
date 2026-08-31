@@ -23,6 +23,32 @@
 
 Zephyr is a distributed AI inference mesh that bridges **local GPU nodes** (running Ollama, llama.cpp, or vLLM) with **OpenAI-compatible API consumers** via a cloud relay gateway.
 
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        ZEPHYR SYSTEM                                │
+│                                                                     │
+│  ┌──────────────┐    WSS/TLS     ┌──────────────────────────────┐  │
+│  │  SDK Runtime │◄──────────────►│  Cloud Gateway               │  │
+│  │  (your GPU)  │                │  (zephyr.onrender.com)        │  │
+│  │              │                │                              │  │
+│  │  ┌─────────┐ │                │  ┌──────────────────────────┐│  │
+│  │  │ Ollama  │ │                │  │  OpenAI-Compatible API   ││  │
+│  │  │localhost│ │                │  │  POST /v1/chat/completions││  │
+│  │  │  :11434 │ │                │  │  GET  /v1/models         ││  │
+│  │  └─────────┘ │                │  │  POST /v1/embeddings     ││  │
+│  └──────────────┘                │  └──────────────────────────┘│  │
+│                                  └──────────────────────────────┘  │
+│                                              ▲                      │
+│                                              │ HTTPS + Bearer token │
+│                                    ┌─────────────────┐             │
+│                                    │  API Consumer   │             │
+│                                    │  (your app,     │             │
+│                                    │   OpenAI SDK,   │             │
+│                                    │   LangChain...) │             │
+│                                    └─────────────────┘             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 The SDK component on your local machine serves dual purposes:
 - **Control plane**: establishes authenticated WebSocket to the Cloud, handles handshake, delivers heartbeats.
 - **Data plane**: receives inference job requests over the same WebSocket, executes them against the local Ollama server, and streams token chunks back to the Cloud, which relays them to the waiting HTTP client.
