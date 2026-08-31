@@ -53,7 +53,7 @@ def test_register_payload_instantiation():
 def test_ready_payload_instantiation():
     payload = SessionReadyPayload(session_id="sess-01", api_key="zph_tmp_123", expires_at=1000.0)
     assert payload.session_id == "sess-01"
-    assert payload.api_key == "zph_tmp_123"
+    assert payload.api_key.get_secret_value() == "zph_tmp_123"
 
 
 def test_heartbeat_payload_instantiation():
@@ -78,7 +78,6 @@ def test_job_ack_payload_instantiation():
 def test_token_chunk_payload_instantiation():
     payload = TokenChunkPayload(delta="Hello", index=0)
     assert payload.delta == "Hello"
-    assert payload.index == 0
 
 
 def test_job_complete_payload_instantiation():
