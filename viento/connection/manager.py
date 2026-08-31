@@ -66,18 +66,18 @@ class ConnectionManager:
         self.backend: InferenceBackend = backend or OllamaAdapter(base_url=self.config.ollama_url)
         self.telemetry = TelemetryCollector()
 
+        # Sequence state is logical-session scoped and survives transport reconnects.
+        self.next_outgoing_sequence: int = 0
+        self.expected_incoming_sequence: int = 0
+        self._sequence_session_id: Optional[str] = None
+        self._sequence_state_initialized: bool = False
+
         self.ws: Optional[WebSocketClientProtocol] = None
         self.is_connected: bool = False
         self.is_running: bool = False
         self.session_id: Optional[str] = None
         self.active_api_key: Optional[str] = None
         self.key_expires_at: Optional[float] = None
-
-        # Sequence state is logical-session scoped and survives transport reconnects.
-        self.next_outgoing_sequence: int = 0
-        self.expected_incoming_sequence: int = 0
-        self._sequence_session_id: Optional[str] = None
-        self._sequence_state_initialized: bool = False
 
         self._heartbeat_task: Optional[asyncio.Task] = None
         self._shutdown_event: Optional[asyncio.Event] = None
@@ -102,6 +102,36 @@ class ConnectionManager:
             self._reset_sequence_state(session_id)
         elif session_id != self._sequence_session_id:
             self._reset_sequence_state(session_id)
+
+    def _validate_welcome_sequence(
+        self, envelope: ProtocolEnvelope, previous_session_id: Optional[str]
+    ) -> bool:
+        """Validate WELCOME against the expected sequence for a new or resumed session.
+
+        A new logical session always starts its inbound sequence at zero. A resumed
+        logical session must continue exactly at the next expected sequence.
+        """
+        if not envelope.session_id:
+            logger.error("WELCOME did not include a session_id")
+            self.is_connected = False
+            return False
+
+        if previous_session_id is None or envelope.session_id != previous_session_id:
+            expected = 0
+        else:
+            expected = self.expected_incoming_sequence
+
+        if envelope.sequence != expected:
+            logger.error(
+                "Invalid WELCOME sequence %d for session %r (expected %d).",
+                envelope.sequence,
+                envelope.session_id,
+                expected,
+            )
+            self.is_connected = False
+            return False
+
+        return True
 
     def _get_next_sequence(self) -> int:
         seq = self.next_outgoing_sequence
@@ -146,8 +176,8 @@ class ConnectionManager:
                     self.ws = ws
                     self.is_connected = True
                     # Do not reset logical-session sequence counters on reconnect.
-                    # _perform_handshake() will establish a new sequence epoch only
-                    # when the gateway assigns a different session_id.
+                    # _perform_handshake() establishes a new sequence epoch only when
+                    # the gateway assigns a different logical session_id.
                     backoff = 1.0
 
                     handshake_success = await self._perform_handshake(models)
@@ -252,7 +282,6 @@ class ConnectionManager:
     async def _perform_handshake(self, models: List[ModelInfo]) -> bool:
         try:
             # HELLO is sent using the currently known logical session (if any).
-            # Its sequence counter therefore remains monotonic across reconnects.
             hello_payload = HelloPayload(
                 runtime_id=self.config.node_name,
                 version="1.0.0",
@@ -272,31 +301,24 @@ class ConnectionManager:
                 logger.error(f"Expected WELCOME, got: {welcome_envelope.type}")
                 return False
 
-            # WELCOME carries the server-selected logical session. Synchronize
-            # sequence state before validating subsequent frames in that session.
-            p_welcome = welcome_envelope.payload
-            welcome_session_id = p_welcome.get("session_id")
-            if not welcome_session_id:
-                logger.error("WELCOME did not include a session_id")
-                return False
-
             previous_session_id = self._sequence_session_id
-            self._sync_sequence_session(welcome_session_id)
-
-            # A changed session represents a fresh sequence epoch; validate WELCOME
-            # against the fresh epoch. For a resumed session, preserve the prior epoch
-            # and validate its next expected sequence.
-            if welcome_session_id != previous_session_id:
-                self.expected_incoming_sequence = welcome_envelope.sequence + 1
-            elif not self._validate_incoming_sequence(welcome_envelope):
+            if not self._validate_welcome_sequence(welcome_envelope, previous_session_id):
                 return False
+
+            welcome_session_id = welcome_envelope.session_id
+
+            # A different logical session starts a fresh sequence epoch. A resumed
+            # session retains both directions' counters across the transport reconnect.
+            if welcome_session_id != previous_session_id:
+                self._reset_sequence_state(welcome_session_id)
 
             self.session_id = welcome_session_id
+            # Consume WELCOME as the first inbound frame of the active session.
+            self.expected_incoming_sequence = welcome_envelope.sequence + 1
 
-            # 2. Collect Real Hardware Snapshot
+            # Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
 
-            # Extract GPU stats if present
             gpu_name = "CPU"
             vram_total_mb = 0
             vram_used_mb = 0
@@ -424,7 +446,6 @@ class ConnectionManager:
                                 await self.on_job_cancel_callback(job_id)
                             else:
                                 self.on_job_cancel_callback(job_id)
-                        # Transmit CANCEL_ACK ONLY AFTER cancellation processing is complete!
                         await self.send_cancel_ack(job_id, envelope.request_id)
                 elif msg_type in (
                     FrameType.HEARTBEAT_ACK,
