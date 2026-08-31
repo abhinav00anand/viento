@@ -28,7 +28,6 @@ from viento.backends.ollama import OllamaAdapter
 from viento.config.loader import ConfigManager, ZephyrConfig
 from viento.protocol.envelope import (
     CancelAckPayload,
-    EmbeddingResponsePayload,
     FrameType,
     HardwareSpecs,
     HeartbeatPayload,
@@ -39,6 +38,7 @@ from viento.protocol.envelope import (
     ModelInfo,
     ProtocolEnvelope,
     RegisterPayload,
+    SessionReadyPayload,
     TokenChunkPayload,
 )
 from viento.telemetry.collector import TelemetryCollector
@@ -98,9 +98,7 @@ class ConnectionManager:
 
     def _sync_sequence_session(self, session_id: Optional[str]) -> None:
         """Synchronize sequence state with a newly established logical session."""
-        if not self._sequence_state_initialized:
-            self._reset_sequence_state(session_id)
-        elif session_id != self._sequence_session_id:
+        if not self._sequence_state_initialized or session_id != self._sequence_session_id:
             self._reset_sequence_state(session_id)
 
     def _validate_welcome_sequence(
@@ -376,10 +374,10 @@ class ConnectionManager:
             if not self._validate_incoming_sequence(session_ready_envelope):
                 return False
 
-            p_ready = session_ready_envelope.payload
-            self.active_api_key = p_ready.get("api_key")
-            ttl = float(p_ready.get("ttl_seconds", 3600))
-            self.key_expires_at = float(p_ready.get("expires_at", time.time() + ttl))
+            p_ready = SessionReadyPayload.model_validate(session_ready_envelope.payload)
+            self.active_api_key = p_ready.api_key.get_secret_value()
+            ttl = float(p_ready.ttl_seconds)
+            self.key_expires_at = p_ready.expires_at
 
             self.config_manager.update_runtime_state(
                 session_id=self.session_id,
