@@ -3,21 +3,16 @@
 import json
 import logging
 import threading
-import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
 import httpx
 
 from viento.backends.base import (
-    BackendError,
-    BackendOfflineError,
-    BackendTimeoutError,
-    ContextOverflowError,
     EmbeddingResult,
     ExecutionHandle,
     GenerationChunk,
     GenerationResult,
     InferenceBackend,
-    ModelNotFoundError,
 )
 
 logger = logging.getLogger(__name__)
