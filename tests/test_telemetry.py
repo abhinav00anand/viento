@@ -2,6 +2,7 @@
 
 import json
 import logging
+import pytest
 
 from viento.telemetry.collector import (
     HardwareStats,
@@ -215,4 +216,17 @@ def test_gpu_metrics_subprocess_error_handling():
 
     with patch("subprocess.run", side_effect=FileNotFoundError()):
         assert collector.get_gpu_metrics() is None
+
+
+@pytest.mark.asyncio
+async def test_gpu_metrics_async_execution():
+    """Verify asynchronous non-blocking retrieval of GPU and hardware statistics."""
+    collector = TelemetryCollector()
+    collector._nvidia_smi_path = None
+
+    res = await collector.get_gpu_metrics_async()
+    assert res is None
+
+    hw = await collector.get_hardware_stats_async()
+    assert hw.memory_total_bytes > 0
 

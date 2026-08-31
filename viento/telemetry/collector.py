@@ -1,5 +1,6 @@
 """Hardware telemetry collector, request counters, and latency histogram tracking."""
 
+import asyncio
 import logging
 import math
 import os
@@ -291,6 +292,14 @@ class TelemetryCollector:
     def get_hardware_snapshot(self) -> HardwareStats:
         """Returns HardwareStats data class snapshot. Alias for get_hardware_stats."""
         return self.get_hardware_stats()
+
+    async def get_gpu_metrics_async(self) -> Optional[List[GPUStat]]:
+        """Asynchronously collects GPU statistics offloading subprocess execution to a worker thread."""
+        return await asyncio.to_thread(self.get_gpu_metrics)
+
+    async def get_hardware_stats_async(self) -> HardwareStats:
+        """Asynchronously collects all hardware statistics without blocking the async event loop."""
+        return await asyncio.to_thread(self.get_hardware_stats)
 
     def increment_request(self, model: str, status: str = "success") -> None:
         """Increments request counter for model and status."""
