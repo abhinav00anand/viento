@@ -172,8 +172,10 @@ def test_gpu_metrics_edge_cases_and_safe_float():
     collector = TelemetryCollector()
     collector._nvidia_smi_path = "fake-smi"
 
-    # Simulated output with MIG slice reporting [Not Supported] and 0 MB total
+    # Simulated output with MIG slice, a malformed error line, and an RTX 4090
     fake_smi_output = (
+        "ERROR: Unable to communicate with GPU\n"
+        "[N/A], Unknown GPU, 0.0, 0, 0, 0, 0\n"
         "0, NVIDIA A100-SXM4-MIG, [Not Supported], [N/A], [N/A], [N/A], [N/A]\n"
         "1, NVIDIA RTX 4090, 35.5, 4000, 24000, 48.0, 150.2\n"
     )

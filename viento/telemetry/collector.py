@@ -229,7 +229,12 @@ class TelemetryCollector:
                     continue
                 parts = [p.strip() for p in line.split(",")]
                 if len(parts) >= 5:
-                    idx = int(parts[0]) if parts[0].isdigit() else 0
+                    if not parts[0].isdigit():
+                        logger.warning(
+                            f"Skipping malformed nvidia-smi line with non-digit GPU index: '{line.strip()}'"
+                        )
+                        continue
+                    idx = int(parts[0])
                     name = parts[1]
                     util = self._safe_float(parts[2], default=0.0)
                     mem_used = self._safe_float(parts[3], default=0.0)
