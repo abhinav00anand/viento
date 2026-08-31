@@ -269,7 +269,9 @@ class TelemetryCollector:
             logger.debug(f"nvidia-smi query failed with code {e.returncode}: {e.stderr}")
             return None
         except Exception as e:
-            logger.debug(f"Unexpected error querying nvidia-smi: {e}")
+            # Catch-all for any other unexpected parsing or runtime errors.
+            # Log as WARNING to ensure visibility for truly unexpected issues.
+            logger.warning(f"Unexpected error querying nvidia-smi: {e}", exc_info=True)
             return None
 
     def get_hardware_stats(self) -> HardwareStats:
