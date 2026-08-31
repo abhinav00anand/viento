@@ -7,12 +7,10 @@ directional sequence tracking and validation, and automatic reconnection.
 """
 
 import asyncio
-import json
 import logging
 import random
 import time
 from typing import Any, Callable, Dict, List, Optional
-import httpx
 
 try:
     import websockets
@@ -26,11 +24,9 @@ except ImportError:
 
 from viento.backends.base import InferenceBackend
 from viento.backends.ollama import OllamaAdapter
-from viento.config.loader import ConfigManager, RuntimeState, ZephyrConfig
+from viento.config.loader import ConfigManager, ZephyrConfig
 from viento.protocol.envelope import (
     CancelAckPayload,
-    CancelJobPayload,
-    EmbeddingRequestPayload,
     EmbeddingResponsePayload,
     FrameType,
     HardwareSpecs,
@@ -39,7 +35,6 @@ from viento.protocol.envelope import (
     JobAckPayload,
     JobCompletePayload,
     JobErrorPayload,
-    JobRequestPayload,
     ModelInfo,
     ProtocolEnvelope,
     RegisterPayload,
@@ -242,20 +237,20 @@ class ConnectionManager:
 
             # 2. Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
-            
+
             # Extract GPU stats if present
             gpu_name = "CPU"
             vram_total_mb = 0
             vram_used_mb = 0
             device_count = 0
-            
+
             if hw_snap.gpus:
                 first_gpu = hw_snap.gpus[0]
                 gpu_name = first_gpu.name
                 vram_total_mb = int(first_gpu.memory_total_mb)
                 vram_used_mb = int(first_gpu.memory_used_mb)
                 device_count = len(hw_snap.gpus)
-            
+
             hardware = HardwareSpecs(
                 cpu_count=hw_snap.cpu_count_logical,
                 ram_total_mb=int(hw_snap.memory_total_bytes / (1024**2)),
