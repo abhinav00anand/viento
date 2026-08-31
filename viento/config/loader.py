@@ -6,10 +6,10 @@ Secrets (like bootstrap_key) are read dynamically from environment variables
 and are NEVER written to disk in plain text.
 """
 
-from dataclasses import asdict, dataclass, field
 import json
 import logging
 import os
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -174,7 +174,7 @@ class ConfigManager:
         if not self.runtime_state_path.exists():
             return RuntimeState()
         try:
-            with open(self.runtime_state_path, "r", encoding="utf-8") as f:
+            with open(self.runtime_state_path, encoding="utf-8") as f:
                 data = json.load(f)
             return RuntimeState.from_dict(data)
         except Exception:
