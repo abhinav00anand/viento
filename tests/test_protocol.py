@@ -1,7 +1,5 @@
 """Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
 
-import pytest
-from pydantic import ValidationError
 
 from viento.protocol.envelope import (
     CancelAckPayload,
@@ -16,21 +14,14 @@ from viento.protocol.envelope import (
     JobCompletePayload,
     JobErrorPayload,
     JobRequestPayload,
-    ModelInfo,
     ProtocolEnvelope,
-    RegisterAckPayload,
     RegisterPayload,
     SessionReadyPayload,
     TokenChunkPayload,
     WelcomePayload,
 )
 from viento.protocol.validator import (
-    InvalidPayloadError,
-    ProtocolValidationError,
-    ProtocolValidator,
-    SequenceError,
     SequenceTracker,
-    UnknownMessageTypeError,
 )
 
 

@@ -2,15 +2,10 @@
 
 import json
 from unittest.mock import MagicMock, patch
+
 import httpx
 import pytest
 
-from viento.backends.base import (
-    BackendError,
-    BackendOfflineError,
-    ContextOverflowError,
-    ModelNotFoundError,
-)
 from viento.backends.ollama import OllamaAdapter
 
 
