@@ -90,11 +90,12 @@ def init_command(force: bool):
 @cli.command("version")
 def version_command():
     """Output SDK runtime, Python environment, and protocol version information."""
-    table = Table(title="Zephyr Version & Environment Info", show_header=True, header_style="bold cyan")
+    from viento import __version__
+    table = Table(title="Viento Version & Environment Info", show_header=True, header_style="bold cyan")
     table.add_column("Property", style="yellow")
     table.add_column("Value", style="white")
 
-    table.add_row("SDK Package Version", "0.1.0-beta")
+    table.add_row("SDK Package Version", __version__)
     table.add_row("Protocol Envelope Version", "1.0")
     table.add_row("Python Version", sys.version.split(" ")[0])
     table.add_row("Platform OS", sys.platform)
