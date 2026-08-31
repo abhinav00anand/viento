@@ -6,8 +6,9 @@ and backend adapter throughput.
 """
 
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from dataclasses import dataclass
+from typing import List
+
 from viento.backends.base import InferenceBackend
 
 
@@ -53,10 +54,12 @@ class BenchmarkSuite:
             first_chunk_received = False
             token_count = 0
 
-            def on_chunk(chunk):
+            start_time = t0
+
+            def on_chunk(chunk, _start=start_time):
                 nonlocal ttft, first_chunk_received, token_count
                 if not first_chunk_received:
-                    ttft = time.time() - t0
+                    ttft = time.time() - _start
                     first_chunk_received = True
                 token_count += 1
 
