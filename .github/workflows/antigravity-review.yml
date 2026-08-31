@@ -23,7 +23,7 @@ on:
 
 concurrency:
   group: '${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.ref_name }}'
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   antigravity-review:

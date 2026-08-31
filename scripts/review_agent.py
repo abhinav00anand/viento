@@ -174,32 +174,52 @@ async def run_antigravity_agent(prompt: str, system_instructions: str, model: st
                 sys.stdout.flush()
                 output_tokens.append(token)
             return "".join(output_tokens)
-    except ImportError:
-        print("Google Antigravity SDK not found. Falling back to direct Gemini API...")
+    except Exception as e:
+        print(f"Notice: Antigravity SDK harness encountered ({e}). Transitioning to direct API with multi-model failover...")
         return await run_gemini_fallback(prompt, system_instructions, api_key, model)
 
 
-async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: str, model: str) -> str:
-    """Fallback using httpx to call Gemini API directly."""
+async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: str, initial_model: str) -> str:
+    """Fallback using httpx to call Gemini API directly with retry and model fallback."""
     import httpx
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "system_instruction": {"parts": [{"text": system_instructions}]},
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": 0.2,
-            "maxOutputTokens": 8192,
-        },
-    }
+    models_to_try = [initial_model]
+    for m in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]:
+        if m not in models_to_try:
+            models_to_try.append(m)
 
-    async with httpx.AsyncClient(timeout=180.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        data = response.json()
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-        print(text)
-        return text
+    last_error = None
+    for model in models_to_try:
+        for attempt in range(1, 4):
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                payload = {
+                    "system_instruction": {"parts": [{"text": system_instructions}]},
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 8192,
+                    },
+                }
+
+                print(f"Connecting with model '{model}' (attempt {attempt}/3)...")
+                async with httpx.AsyncClient(timeout=180.0) as client:
+                    response = await client.post(url, json=payload)
+                    if response.status_code in (429, 503):
+                        print(f"Model '{model}' returned HTTP {response.status_code} (capacity limit). Backing off {attempt * 2}s...")
+                        await asyncio.sleep(attempt * 2)
+                        continue
+                    response.raise_for_status()
+                    data = response.json()
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    print(text)
+                    return text
+            except Exception as err:
+                last_error = err
+                print(f"Notice on '{model}' attempt {attempt}: {err}")
+                await asyncio.sleep(2)
+
+    raise RuntimeError(f"All model attempts exhausted. Last error: {last_error}")
 
 
 async def main() -> None:
