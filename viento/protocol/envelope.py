@@ -9,7 +9,7 @@ import uuid
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class FrameType(str, Enum):
@@ -74,6 +74,10 @@ class ProtocolEnvelope(BaseModel):
     Canonical Wire Protocol Envelope (Version 1.0).
     Wraps outer metadata (ids, sequence, timestamps) and nested payload.
     Strict validation forbids unknown extra fields.
+
+    SecretStr values are retained in-memory so accidental model/log
+    representations remain masked. ``to_json`` is the explicit transport
+    boundary and unwraps secrets only when serializing to the wire.
     """
 
     model_config = ConfigDict(extra="forbid")
@@ -93,8 +97,27 @@ class ProtocolEnvelope(BaseModel):
         """Backward-compatibility property for legacy validator references."""
         return self.type
 
+    @staticmethod
+    def _unwrap_secrets(value: Any) -> Any:
+        """Recursively unwrap SecretStr values at the explicit wire boundary."""
+        if isinstance(value, SecretStr):
+            return value.get_secret_value()
+        if isinstance(value, dict):
+            return {key: ProtocolEnvelope._unwrap_secrets(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [ProtocolEnvelope._unwrap_secrets(item) for item in value]
+        if isinstance(value, tuple):
+            return [ProtocolEnvelope._unwrap_secrets(item) for item in value]
+        return value
+
     def to_json(self) -> str:
-        return self.model_dump_json(exclude_none=True)
+        """Serialize the canonical wire representation, restoring secrets for transport only."""
+        data = self.model_dump(exclude_none=True, mode="python")
+        return json.dumps(
+            self._unwrap_secrets(data),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     def validate_payload(self) -> Any:
         """Validate payload dict against expected schema for FrameType if registered."""
@@ -117,7 +140,7 @@ class HelloPayload(BaseModel):
 
     runtime_id: str
     version: str = "1.0.0"
-    auth_key: Optional[str] = None
+    auth_key: Optional[SecretStr] = None
     session_id: Optional[str] = None
 
 
@@ -150,7 +173,7 @@ class SessionReadyPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     session_id: str
-    api_key: str
+    api_key: SecretStr
     expires_at: float
     ttl_seconds: int = 3600
 
