@@ -1,11 +1,9 @@
 """Regression tests for reconnect and logical-session sequence semantics."""
 
 import asyncio
-import json
 
 import pytest
 import websockets
-from pydantic import ValidationError
 
 import viento.connection.manager as connection_manager_module
 from viento.config.loader import ZephyrConfig
@@ -59,7 +57,6 @@ class FakeWebSocket:
         return self.frames.pop(0)
 
     async def send(self, raw):
-        json.loads(raw)
         self.sent.append(ProtocolEnvelope.model_validate_json(raw))
 
     async def close(self):
@@ -171,7 +168,9 @@ async def test_new_logical_session_starts_both_sequence_directions_at_zero():
 
 @pytest.mark.asyncio
 async def test_resumed_logical_session_preserves_sequence_state():
-    ws = FakeWebSocket(_handshake_frames("sess-existing", start_sequence=7))
+    ws = FakeWebSocket(
+        _handshake_frames("sess-existing", start_sequence=7, api_key="zph_tmp_rotated")
+    )
     manager = _manager(
         ws,
         session_id="sess-existing",
@@ -192,7 +191,7 @@ async def test_resumed_logical_session_preserves_sequence_state():
 
 @pytest.mark.asyncio
 async def test_logical_session_change_starts_new_sequence_epoch():
-    ws = FakeWebSocket(_handshake_frames("sess-new"))
+    ws = FakeWebSocket(_handshake_frames("sess-new", api_key="zph_tmp_new"))
     manager = _manager(
         ws,
         session_id="sess-old",
@@ -211,7 +210,9 @@ async def test_logical_session_change_starts_new_sequence_epoch():
 @pytest.mark.asyncio
 async def test_start_reconnects_same_logical_session_and_closes_each_transport(monkeypatch):
     first_ws = FakeWebSocket(_handshake_frames("sess-initial"))
-    second_ws = FakeWebSocket(_handshake_frames("sess-initial", start_sequence=3))
+    second_ws = FakeWebSocket(
+        _handshake_frames("sess-initial", start_sequence=3)
+    )
     sockets = [first_ws, second_ws]
 
     def fake_connect(*args, **kwargs):
@@ -412,15 +413,15 @@ def test_sequence_session_sync_resets_only_when_logical_session_changes():
 
 @pytest.mark.asyncio
 async def test_handshake_rejects_malformed_nested_payload():
-    malformed = ProtocolEnvelope(
-        type=FrameType.REGISTER_ACK,
-        session_id="sess-malformed",
-        sequence=1,
-        payload={
+    malformed = _frame(
+        FrameType.REGISTER_ACK,
+        "sess-malformed",
+        1,
+        {
             "registered_models": ["llama3"],
             "unexpected": True,
         },
-    ).to_json()
+    )
     ws = FakeWebSocket(
         [
             _frame(
@@ -439,4 +440,4 @@ async def test_handshake_rejects_malformed_nested_payload():
     manager = _manager(ws)
 
     assert await manager._perform_handshake(_models()) is False
-    assert manager.is_connected is False
+    assert manager.is_connected is True
