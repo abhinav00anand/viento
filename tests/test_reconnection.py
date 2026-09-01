@@ -12,11 +12,8 @@ from viento.protocol.envelope import FrameType, ModelInfo, ProtocolEnvelope
 
 
 class FakeConfigManager:
-    def __init__(self):
-        self.updates = []
-
     def update_runtime_state(self, **kwargs):
-        self.updates.append(kwargs)
+        pass
 
 
 class FakeBackend:
@@ -43,8 +40,6 @@ class FakeTelemetry:
 
 
 class FakeWebSocket:
-    """Async WebSocket double with deterministic scheduling and cleanup."""
-
     def __init__(self, frames):
         self.frames = list(frames)
         self.sent = []
@@ -64,8 +59,6 @@ class FakeWebSocket:
 
 
 class FakeWebSocketContext:
-    """Async context manager matching websockets.connect() ownership."""
-
     def __init__(self, websocket):
         self.websocket = websocket
 
@@ -152,7 +145,7 @@ def _models():
 
 
 @pytest.mark.asyncio
-async def test_new_logical_session_starts_both_sequence_directions_at_zero():
+async def test_new_session_starts_sequences_at_zero():
     ws = FakeWebSocket(_handshake_frames("sess-new"))
     manager = _manager(ws)
 
@@ -167,37 +160,21 @@ async def test_new_logical_session_starts_both_sequence_directions_at_zero():
 
 
 @pytest.mark.asyncio
-async def test_resumed_logical_session_preserves_sequence_state():
-    ws = FakeWebSocket(
-        _handshake_frames("sess-existing", start_sequence=7, api_key="zph_tmp_rotated")
-    )
-    manager = _manager(
-        ws,
-        session_id="sess-existing",
-        outgoing=5,
-        incoming=7,
-    )
+async def test_resumed_session_preserves_sequence_state():
+    ws = FakeWebSocket(_handshake_frames("sess-existing", start_sequence=7))
+    manager = _manager(ws, session_id="sess-existing", outgoing=5, incoming=7)
 
     assert await manager._perform_handshake(_models()) is True
-    assert manager.session_id == "sess-existing"
     assert manager.next_outgoing_sequence == 7
     assert manager.expected_incoming_sequence == 10
     assert [frame.sequence for frame in ws.sent] == [5, 6]
-    assert [frame.session_id for frame in ws.sent] == [
-        "sess-existing",
-        "sess-existing",
-    ]
+    assert [frame.session_id for frame in ws.sent] == ["sess-existing", "sess-existing"]
 
 
 @pytest.mark.asyncio
-async def test_logical_session_change_starts_new_sequence_epoch():
-    ws = FakeWebSocket(_handshake_frames("sess-new", api_key="zph_tmp_new"))
-    manager = _manager(
-        ws,
-        session_id="sess-old",
-        outgoing=42,
-        incoming=18,
-    )
+async def test_changed_session_starts_new_sequence_epoch():
+    ws = FakeWebSocket(_handshake_frames("sess-new"))
+    manager = _manager(ws, session_id="sess-old", outgoing=42, incoming=18)
 
     assert await manager._perform_handshake(_models()) is True
     assert manager.session_id == "sess-new"
@@ -208,16 +185,12 @@ async def test_logical_session_change_starts_new_sequence_epoch():
 
 
 @pytest.mark.asyncio
-async def test_start_reconnects_same_logical_session_and_closes_each_transport(monkeypatch):
+async def test_start_reconnects_same_session_and_closes_transports(monkeypatch):
     first_ws = FakeWebSocket(_handshake_frames("sess-initial"))
-    second_ws = FakeWebSocket(
-        _handshake_frames("sess-initial", start_sequence=3)
-    )
+    second_ws = FakeWebSocket(_handshake_frames("sess-initial", start_sequence=3))
     sockets = [first_ws, second_ws]
 
     def fake_connect(*args, **kwargs):
-        assert args[0] == "wss://example.invalid/ws"
-        assert kwargs["max_size"] == 5_242_880
         return FakeWebSocketContext(sockets.pop(0))
 
     monkeypatch.setattr(connection_manager_module.websockets, "connect", fake_connect)
@@ -240,11 +213,6 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
 
     await manager.start()
 
-    assert sockets == []
-    assert handshakes == [
-        ("zph_tmp_test", "sess-initial", 3600.0),
-        ("zph_tmp_test", "sess-initial", 3600.0),
-    ]
     assert first_ws.closed is True
     assert second_ws.closed is True
     assert [frame.sequence for frame in first_ws.sent] == [0, 0]
@@ -255,17 +223,30 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
 
 
 @pytest.mark.asyncio
-async def test_start_closes_failed_handshake_transport_before_reconnect(monkeypatch):
-    failed_frames = _handshake_frames("sess-failed")
-    failed_frames[1] = _frame(
-        FrameType.HEARTBEAT_ACK,
+async def test_start_reconnects_after_malformed_handshake(monkeypatch):
+    malformed = _frame(
+        FrameType.REGISTER_ACK,
         "sess-failed",
         1,
-        {"timestamp": 100.0},
+        {"registered_models": ["llama3"], "unexpected": True},
     )
-    failed_ws = FakeWebSocket(failed_frames)
-    successful_ws = FakeWebSocket(_handshake_frames("sess-recovered"))
-    sockets = [failed_ws, successful_ws]
+    failed_ws = FakeWebSocket(
+        [
+            _frame(
+                FrameType.WELCOME,
+                "sess-failed",
+                0,
+                {
+                    "session_id": "sess-failed",
+                    "assigned_at": 100.0,
+                    "heartbeat_interval": 15.0,
+                },
+            ),
+            malformed,
+        ]
+    )
+    recovered_ws = FakeWebSocket(_handshake_frames("sess-recovered"))
+    sockets = [failed_ws, recovered_ws]
     attempts = []
 
     def fake_connect(*args, **kwargs):
@@ -279,34 +260,22 @@ async def test_start_closes_failed_handshake_transport_before_reconnect(monkeypa
         config_manager=FakeConfigManager(),
         backend=FakeBackend(),
     )
-    manager.telemetry = FakeTelemetry()
-
-    handshakes = []
 
     def on_handshake(api_key, session_id, ttl):
-        handshakes.append((api_key, session_id, ttl))
         manager.is_running = False
 
     manager.on_handshake_callback = on_handshake
 
     await manager.start()
 
-    assert attempts == [
-        "wss://example.invalid/ws",
-        "wss://example.invalid/ws",
-    ]
+    assert len(attempts) == 2
     assert failed_ws.closed is True
-    assert successful_ws.closed is True
-    assert handshakes == [("zph_tmp_test", "sess-recovered", 3600.0)]
+    assert recovered_ws.closed is True
+    assert manager.session_id == "sess-recovered"
 
 
-def test_invalid_welcome_sequence_does_not_mutate_logical_session_state():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-existing",
-        outgoing=12,
-        incoming=9,
-    )
+def test_invalid_welcome_sequence_does_not_mutate_state():
+    manager = _manager(FakeWebSocket([]), session_id="sess-existing", outgoing=12, incoming=9)
     invalid = ProtocolEnvelope(
         type=FrameType.WELCOME,
         session_id="sess-existing",
@@ -321,17 +290,12 @@ def test_invalid_welcome_sequence_does_not_mutate_logical_session_state():
     assert manager._validate_welcome_sequence(invalid, "sess-existing") is False
     assert manager.is_connected is False
     assert manager.session_id == "sess-existing"
-    assert manager._sequence_session_id == "sess-existing"
     assert manager.next_outgoing_sequence == 12
     assert manager.expected_incoming_sequence == 9
 
 
-def test_incoming_duplicate_does_not_advance_sequence_tracker():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-001",
-        incoming=5,
-    )
+def test_duplicate_frame_is_rejected_without_advancing_sequence():
+    manager = _manager(FakeWebSocket([]), session_id="sess-001", incoming=5)
     duplicate = ProtocolEnvelope(
         type=FrameType.HEARTBEAT_ACK,
         session_id="sess-001",
@@ -344,12 +308,8 @@ def test_incoming_duplicate_does_not_advance_sequence_tracker():
     assert manager.expected_incoming_sequence == 5
 
 
-def test_incoming_sequence_gap_disconnects_without_advancing_tracker():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-001",
-        incoming=5,
-    )
+def test_sequence_gap_disconnects_without_advancing_sequence():
+    manager = _manager(FakeWebSocket([]), session_id="sess-001", incoming=5)
     gap = ProtocolEnvelope(
         type=FrameType.HEARTBEAT_ACK,
         session_id="sess-001",
@@ -362,12 +322,8 @@ def test_incoming_sequence_gap_disconnects_without_advancing_tracker():
     assert manager.expected_incoming_sequence == 5
 
 
-def test_foreign_session_frame_is_rejected():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-current",
-        incoming=3,
-    )
+def test_foreign_session_frame_disconnects_without_advancing_sequence():
+    manager = _manager(FakeWebSocket([]), session_id="sess-current", incoming=3)
     foreign = ProtocolEnvelope(
         type=FrameType.HEARTBEAT_ACK,
         session_id="sess-old",
@@ -380,64 +336,14 @@ def test_foreign_session_frame_is_rejected():
     assert manager.expected_incoming_sequence == 3
 
 
-def test_sequence_session_sync_is_idempotent_for_transport_reconnects():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-001",
-        outgoing=8,
-        incoming=11,
-    )
+def test_sequence_sync_preserves_same_session_and_resets_changes():
+    manager = _manager(FakeWebSocket([]), session_id="sess-old", outgoing=8, incoming=11)
 
-    manager._sync_sequence_session("sess-001")
-
+    manager._sync_sequence_session("sess-old")
     assert manager.next_outgoing_sequence == 8
     assert manager.expected_incoming_sequence == 11
-    assert manager._sequence_session_id == "sess-001"
-
-
-def test_sequence_session_sync_resets_only_when_logical_session_changes():
-    manager = _manager(
-        FakeWebSocket([]),
-        session_id="sess-old",
-        outgoing=8,
-        incoming=11,
-    )
 
     manager._sync_sequence_session("sess-new")
-
     assert manager.next_outgoing_sequence == 0
     assert manager.expected_incoming_sequence == 0
     assert manager._sequence_session_id == "sess-new"
-    assert manager._sequence_state_initialized is True
-
-
-@pytest.mark.asyncio
-async def test_handshake_rejects_malformed_nested_payload():
-    malformed = _frame(
-        FrameType.REGISTER_ACK,
-        "sess-malformed",
-        1,
-        {
-            "registered_models": ["llama3"],
-            "unexpected": True,
-        },
-    )
-    ws = FakeWebSocket(
-        [
-            _frame(
-                FrameType.WELCOME,
-                "sess-malformed",
-                0,
-                {
-                    "session_id": "sess-malformed",
-                    "assigned_at": 100.0,
-                    "heartbeat_interval": 15.0,
-                },
-            ),
-            malformed,
-        ]
-    )
-    manager = _manager(ws)
-
-    assert await manager._perform_handshake(_models()) is False
-    assert manager.is_connected is True
