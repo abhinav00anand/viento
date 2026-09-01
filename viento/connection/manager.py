@@ -47,13 +47,7 @@ logger = logging.getLogger("viento.connection")
 
 
 class ConnectionManager:
-    """
-    Supervisor managing persistent WebSocket connection with Zephyr Cloud gateway.
-
-    Sequence counters are scoped to the logical Zephyr session rather than the
-    underlying WebSocket connection. This allows reconnects to resume an
-    established session without silently replaying sequence numbers.
-    """
+    """Supervisor managing the persistent WebSocket connection with Zephyr Cloud."""
 
     def __init__(
         self,
@@ -82,7 +76,6 @@ class ConnectionManager:
         self._heartbeat_task: Optional[asyncio.Task] = None
         self._shutdown_event: Optional[asyncio.Event] = None
 
-        # Event Callbacks
         self.on_handshake_callback: Optional[Callable[[str, str, float], None]] = None
         self.on_job_received_callback: Optional[Callable[[ProtocolEnvelope], None]] = None
         self.on_embedding_received_callback: Optional[Callable[[ProtocolEnvelope], None]] = None
@@ -90,34 +83,28 @@ class ConnectionManager:
         self.on_disconnect_callback: Optional[Callable[[], None]] = None
 
     def _reset_sequence_state(self, session_id: Optional[str]) -> None:
-        """Reset sequence counters only when the logical session changes."""
         self._sequence_session_id = session_id
         self.next_outgoing_sequence = 0
         self.expected_incoming_sequence = 0
         self._sequence_state_initialized = True
 
     def _sync_sequence_session(self, session_id: Optional[str]) -> None:
-        """Synchronize sequence state with a newly established logical session."""
         if not self._sequence_state_initialized or session_id != self._sequence_session_id:
             self._reset_sequence_state(session_id)
 
     def _validate_welcome_sequence(
         self, envelope: ProtocolEnvelope, previous_session_id: Optional[str]
     ) -> bool:
-        """Validate WELCOME against the expected sequence for a new or resumed session.
-
-        A new logical session always starts its inbound sequence at zero. A resumed
-        logical session must continue exactly at the next expected sequence.
-        """
         if not envelope.session_id:
             logger.error("WELCOME did not include a session_id")
             self.is_connected = False
             return False
 
-        if previous_session_id is None or envelope.session_id != previous_session_id:
-            expected = 0
-        else:
-            expected = self.expected_incoming_sequence
+        expected = (
+            0
+            if previous_session_id is None or envelope.session_id != previous_session_id
+            else self.expected_incoming_sequence
+        )
 
         if envelope.sequence != expected:
             logger.error(
@@ -142,9 +129,16 @@ class ConnectionManager:
             envelope.session_id = self.session_id
             await self.ws.send(envelope.to_json())
 
+    async def _close_failed_handshake(self) -> None:
+        self.is_connected = False
+        if self.ws:
+            try:
+                await self.ws.close()
+            except Exception as exc:
+                logger.debug("Failed to close handshake-failed WebSocket: %s", exc)
+
     async def start(self) -> None:
         self.is_running = True
-        # BUG-15 FIX: Lazily create asyncio.Event inside running event loop to avoid Python 3.9/3.10 issues
         self._shutdown_event = asyncio.Event()
         self._shutdown_event.clear()
 
@@ -160,7 +154,7 @@ class ConnectionManager:
 
         while self.is_running and not self._shutdown_event.is_set():
             try:
-                logger.info(f"Connecting to Zephyr Cloud at {self.config.server_url}...")
+                logger.info("Connecting to Zephyr Cloud at %s...", self.config.server_url)
                 if websockets is None:
                     raise RuntimeError("websockets library is required.")
 
@@ -173,18 +167,14 @@ class ConnectionManager:
                 ) as ws:
                     self.ws = ws
                     self.is_connected = True
-                    # Do not reset logical-session sequence counters on reconnect.
-                    # _perform_handshake() establishes a new sequence epoch only when
-                    # the gateway assigns a different logical session_id.
                     backoff = 1.0
 
                     handshake_success = await self._perform_handshake(models)
                     if not handshake_success:
                         logger.error("Handshake failed. Reconnecting...")
-                        await asyncio.sleep(2.0)
                         continue
 
-                    logger.info(f"Handshake successful. Session ID: {self.session_id}")
+                    logger.info("Handshake successful. Session ID: %s", self.session_id)
 
                     self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
                     await self._receive_loop()
@@ -194,13 +184,13 @@ class ConnectionManager:
                 break
             except Exception as e:
                 self.is_connected = False
-                logger.warning(f"WebSocket connection error: {e}")
+                logger.warning("WebSocket connection error: %s", e)
                 self.config_manager.update_runtime_state(status="reconnecting")
 
             if self.is_running and not (self._shutdown_event and self._shutdown_event.is_set()):
                 jitter = random.uniform(-0.2, 0.2) * backoff
                 sleep_time = min(max_backoff, backoff + jitter)
-                logger.info(f"Retrying connection in {sleep_time:.2f}s...")
+                logger.info("Retrying connection in %.2fs", sleep_time)
                 await asyncio.sleep(sleep_time)
                 backoff = min(max_backoff, backoff * 2.0)
 
@@ -237,15 +227,16 @@ class ConnectionManager:
                         )
                     )
             logger.info(
-                f"Discovered models via backend '{self.backend.name()}': {[m.name for m in model_infos]}"
+                "Discovered models via backend '%s': %s",
+                self.backend.name(),
+                [m.name for m in model_infos],
             )
             return model_infos
         except Exception as e:
-            logger.warning(f"Could not discover models from backend '{self.backend.name()}': {e}")
+            logger.warning("Could not discover models from backend '%s': %s", self.backend.name(), e)
             return []
 
     def _validate_incoming_sequence(self, envelope: ProtocolEnvelope) -> bool:
-        """Validate incoming sequence strictly within the active logical session."""
         if self.session_id is None or envelope.session_id != self.session_id:
             logger.error(
                 "Rejecting frame with session_id=%r for active session_id=%r.",
@@ -257,71 +248,60 @@ class ConnectionManager:
 
         incoming_seq = envelope.sequence
         expected = self.expected_incoming_sequence
-
         if incoming_seq == expected:
             self.expected_incoming_sequence += 1
             return True
-        elif incoming_seq < expected:
+        if incoming_seq < expected:
             logger.warning(
                 "SDK received duplicate frame seq %d (expected %d). Ignoring.",
                 incoming_seq,
                 expected,
             )
             return False
-        else:
-            logger.error(
-                "SDK sequence gap: received seq %d (expected %d). Disconnecting.",
-                incoming_seq,
-                expected,
-            )
-            self.is_connected = False
-            return False
+
+        logger.error(
+            "SDK sequence gap: received seq %d (expected %d). Disconnecting.",
+            incoming_seq,
+            expected,
+        )
+        self.is_connected = False
+        return False
 
     async def _perform_handshake(self, models: List[ModelInfo]) -> bool:
         try:
-            # HELLO is sent using the currently known logical session (if any).
             hello_payload = HelloPayload(
                 runtime_id=self.config.node_name,
                 version="1.0.0",
                 auth_key=self.config.bootstrap_key or None,
                 session_id=self.session_id,
             )
-            hello_envelope = ProtocolEnvelope(
-                type=FrameType.HELLO,
-                payload=hello_payload.model_dump(),
-            )
+            hello_envelope = ProtocolEnvelope(type=FrameType.HELLO, payload=hello_payload.model_dump())
             await self.send_envelope(hello_envelope)
 
-            # Await WELCOME
             raw_msg = await asyncio.wait_for(self.ws.recv(), timeout=10.0)
             welcome_envelope = ProtocolEnvelope.from_json(raw_msg)
             if welcome_envelope.type != FrameType.WELCOME:
-                logger.error(f"Expected WELCOME, got: {welcome_envelope.type}")
+                logger.error("Expected WELCOME, got: %s", welcome_envelope.type)
+                await self._close_failed_handshake()
                 return False
 
             previous_session_id = self._sequence_session_id
             if not self._validate_welcome_sequence(welcome_envelope, previous_session_id):
+                await self._close_failed_handshake()
                 return False
 
             welcome_session_id = welcome_envelope.session_id
-
-            # A different logical session starts a fresh sequence epoch. A resumed
-            # session retains both directions' counters across the transport reconnect.
             if welcome_session_id != previous_session_id:
                 self._reset_sequence_state(welcome_session_id)
 
             self.session_id = welcome_session_id
-            # Consume WELCOME as the first inbound frame of the active session.
             self.expected_incoming_sequence = welcome_envelope.sequence + 1
 
-            # Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
-
             gpu_name = "CPU"
             vram_total_mb = 0
             vram_used_mb = 0
             device_count = 0
-
             if hw_snap.gpus:
                 first_gpu = hw_snap.gpus[0]
                 gpu_name = first_gpu.name
@@ -340,7 +320,6 @@ class ConnectionManager:
                 max_sequence_length=4096,
             )
 
-            # Send REGISTER
             reg_payload = RegisterPayload(
                 runtime_name=self.config.node_name,
                 hardware=hardware,
@@ -354,24 +333,24 @@ class ConnectionManager:
             )
             await self.send_envelope(reg_envelope)
 
-            # Await REGISTER_ACK
             raw_msg = await asyncio.wait_for(self.ws.recv(), timeout=10.0)
             reg_ack_envelope = ProtocolEnvelope.from_json(raw_msg)
             if reg_ack_envelope.type != FrameType.REGISTER_ACK:
-                logger.error(f"Expected REGISTER_ACK, got: {reg_ack_envelope.type}")
+                logger.error("Expected REGISTER_ACK, got: %s", reg_ack_envelope.type)
+                await self._close_failed_handshake()
                 return False
-
             if not self._validate_incoming_sequence(reg_ack_envelope):
+                await self._close_failed_handshake()
                 return False
 
-            # Await SESSION_READY
             raw_msg = await asyncio.wait_for(self.ws.recv(), timeout=10.0)
             session_ready_envelope = ProtocolEnvelope.from_json(raw_msg)
             if session_ready_envelope.type != FrameType.SESSION_READY:
-                logger.error(f"Expected SESSION_READY, got: {session_ready_envelope.type}")
+                logger.error("Expected SESSION_READY, got: %s", session_ready_envelope.type)
+                await self._close_failed_handshake()
                 return False
-
             if not self._validate_incoming_sequence(session_ready_envelope):
+                await self._close_failed_handshake()
                 return False
 
             p_ready = SessionReadyPayload.model_validate(session_ready_envelope.payload)
@@ -390,11 +369,11 @@ class ConnectionManager:
 
             if self.on_handshake_callback:
                 self.on_handshake_callback(self.active_api_key, self.session_id, ttl)
-
             return True
 
         except Exception as e:
-            logger.error(f"Handshake error: {e}")
+            logger.error("Handshake error: %s", e)
+            await self._close_failed_handshake()
             return False
 
     async def _heartbeat_loop(self) -> None:
@@ -403,10 +382,7 @@ class ConnectionManager:
                 await asyncio.sleep(self.config.heartbeat_interval)
                 if self.ws and self.is_connected:
                     snap = self.telemetry.collect_snapshot()
-                    hb_payload = HeartbeatPayload(
-                        active_jobs=snap.active_jobs_count,
-                        metrics=snap.to_dict(),
-                    )
+                    hb_payload = HeartbeatPayload(active_jobs=snap.active_jobs_count, metrics=snap.to_dict())
                     envelope = ProtocolEnvelope(
                         type=FrameType.HEARTBEAT,
                         session_id=self.session_id,
@@ -417,19 +393,17 @@ class ConnectionManager:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.warning(f"Heartbeat ping failed: {e}")
+                logger.warning("Heartbeat ping failed: %s", e)
 
     async def _receive_loop(self) -> None:
         while self.is_connected and self.ws:
             try:
                 raw_msg = await self.ws.recv()
                 envelope = ProtocolEnvelope.from_json(raw_msg)
-
                 if not self._validate_incoming_sequence(envelope):
                     continue
 
                 msg_type = envelope.type
-
                 if msg_type == FrameType.JOB_REQUEST:
                     if self.on_job_received_callback:
                         self.on_job_received_callback(envelope)
@@ -452,7 +426,7 @@ class ConnectionManager:
                     FrameType.JOB_ACK,
                 ):
                     pass
-                elif msg_type in (FrameType.DISCONNECT,):
+                elif msg_type == FrameType.DISCONNECT:
                     logger.info("Received disconnect request from cloud gateway.")
                     await self.stop()
                     break
@@ -464,7 +438,7 @@ class ConnectionManager:
                 self.is_connected = False
                 break
             except Exception as e:
-                logger.error(f"Error processing frame: {e}")
+                logger.error("Error processing frame: %s", e)
 
     async def send_job_ack(
         self, job_id: str, request_id: Optional[str] = None, queue_position: int = 0
@@ -480,12 +454,7 @@ class ConnectionManager:
 
     async def send_cancel_ack(self, job_id: str, request_id: Optional[str] = None) -> None:
         payload = CancelAckPayload(status="cancelled")
-        envelope = ProtocolEnvelope(
-            type=FrameType.CANCEL_ACK,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
+        envelope = ProtocolEnvelope(type=FrameType.CANCEL_ACK, request_id=request_id, job_id=job_id, payload=payload.model_dump())
         await self.send_envelope(envelope)
 
     async def send_job_chunk(
@@ -496,17 +465,8 @@ class ConnectionManager:
         index: int = 0,
         is_final: bool = False,
     ) -> None:
-        payload = TokenChunkPayload(
-            delta=chunk,
-            index=index,
-            finish_reason="stop" if is_final else None,
-        )
-        envelope = ProtocolEnvelope(
-            type=FrameType.TOKEN_CHUNK,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
+        payload = TokenChunkPayload(delta=chunk, index=index, finish_reason="stop" if is_final else None)
+        envelope = ProtocolEnvelope(type=FrameType.TOKEN_CHUNK, request_id=request_id, job_id=job_id, payload=payload.model_dump())
         await self.send_envelope(envelope)
 
     async def send_job_complete(
@@ -519,12 +479,7 @@ class ConnectionManager:
             total_tokens=result.get("total_tokens", 0),
             is_estimated=result.get("is_estimated", False),
         )
-        envelope = ProtocolEnvelope(
-            type=FrameType.JOB_COMPLETE,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
+        envelope = ProtocolEnvelope(type=FrameType.JOB_COMPLETE, request_id=request_id, job_id=job_id, payload=payload.model_dump())
         await self.send_envelope(envelope)
 
     async def send_job_error(
@@ -535,18 +490,9 @@ class ConnectionManager:
         request_id: Optional[str] = None,
         error: Optional[str] = None,
     ) -> None:
-        # Support both `error` (legacy) and `error_message` (canonical) keyword args
         msg = error_message or error or "Unknown runtime error"
-        payload = JobErrorPayload(
-            error_message=msg,
-            error_code=error_code,
-        )
-        envelope = ProtocolEnvelope(
-            type=FrameType.JOB_ERROR,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
+        payload = JobErrorPayload(error_message=msg, error_code=error_code)
+        envelope = ProtocolEnvelope(type=FrameType.JOB_ERROR, request_id=request_id, job_id=job_id, payload=payload.model_dump())
         await self.send_envelope(envelope)
 
     async def stop(self) -> None:
@@ -568,6 +514,13 @@ class ConnectionManager:
         await self._cleanup()
 
     async def _cleanup(self) -> None:
-        if self._heartbeat_task and not self._heartbeat_task.done():
-            self._heartbeat_task.cancel()
+        task = self._heartbeat_task
+        self._heartbeat_task = None
+        if task and not task.done():
+            task.cancel()
+        if task:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
         self.config_manager.update_runtime_state(status="stopped")
