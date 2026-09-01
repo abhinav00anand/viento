@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 import websockets
+from pydantic import ValidationError
 
 import viento.connection.manager as connection_manager_module
 from viento.connection.manager import ConnectionManager
@@ -408,6 +409,9 @@ async def test_handshake_fails_on_malformed_payload():
     ).to_json()
     ws = FakeWebSocket(frames)
     manager = _manager(ws)
+
+    with pytest.raises(ValidationError):
+        ProtocolEnvelope.from_json(frames[1])
 
     result = await manager._perform_handshake(_models())
 
