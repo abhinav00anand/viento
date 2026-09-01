@@ -5,7 +5,6 @@ from types import SimpleNamespace
 
 import pytest
 
-from viento.backends.base import InferenceBackend
 from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import FrameType, ModelInfo, ProtocolEnvelope
 
@@ -20,8 +19,8 @@ class FakeConfigManager:
         self.updates.append(kwargs)
 
 
-class FakeBackend(InferenceBackend):
-    """Deterministic backend dependency for constructor-level test setup."""
+class FakeBackend:
+    """Deterministic duck-typed backend dependency for constructor-level setup."""
 
     def name(self):
         return "test"
