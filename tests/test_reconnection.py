@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from viento.backends.base import InferenceBackend
 from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import FrameType, ModelInfo, ProtocolEnvelope
 
@@ -17,6 +18,19 @@ class FakeConfigManager:
 
     def update_runtime_state(self, **kwargs):
         self.updates.append(kwargs)
+
+
+class FakeBackend(InferenceBackend):
+    """Deterministic backend dependency for constructor-level test setup."""
+
+    def name(self):
+        return "test"
+
+    def capabilities(self):
+        return ["chat", "streaming"]
+
+    def list_models(self):
+        return []
 
 
 class FakeWebSocket:
@@ -63,27 +77,21 @@ def _config():
 
 
 def _manager(ws, *, session_id=None, outgoing=0, incoming=0):
-    manager = object.__new__(ConnectionManager)
-    manager.config_manager = FakeConfigManager()
-    manager.config = _config()
+    """Build a real ConnectionManager with deterministic injected dependencies."""
+    manager = ConnectionManager(
+        config=_config(),
+        config_manager=FakeConfigManager(),
+        backend=FakeBackend(),
+    )
     manager.telemetry = FakeTelemetry()
     manager.ws = ws
     manager.is_connected = True
     manager.is_running = True
     manager.session_id = session_id
-    manager.active_api_key = None
-    manager.key_expires_at = None
     manager.next_outgoing_sequence = outgoing
     manager.expected_incoming_sequence = incoming
     manager._sequence_session_id = session_id
     manager._sequence_state_initialized = session_id is not None
-    manager._heartbeat_task = None
-    manager._shutdown_event = None
-    manager.on_handshake_callback = None
-    manager.on_job_received_callback = None
-    manager.on_embedding_received_callback = None
-    manager.on_job_cancel_callback = None
-    manager.on_disconnect_callback = None
     return manager
 
 
@@ -272,11 +280,7 @@ def test_incoming_frame_from_previous_or_foreign_session_is_rejected():
 
 
 def test_sequence_session_sync_is_idempotent_for_transport_reconnects():
-    manager = object.__new__(ConnectionManager)
-    manager.next_outgoing_sequence = 8
-    manager.expected_incoming_sequence = 11
-    manager._sequence_session_id = "sess-001"
-    manager._sequence_state_initialized = True
+    manager = _manager(FakeWebSocket([]), session_id="sess-001", outgoing=8, incoming=11)
 
     manager._sync_sequence_session("sess-001")
 
@@ -286,11 +290,7 @@ def test_sequence_session_sync_is_idempotent_for_transport_reconnects():
 
 
 def test_sequence_session_sync_resets_only_when_logical_session_changes():
-    manager = object.__new__(ConnectionManager)
-    manager.next_outgoing_sequence = 8
-    manager.expected_incoming_sequence = 11
-    manager._sequence_session_id = "sess-old"
-    manager._sequence_state_initialized = True
+    manager = _manager(FakeWebSocket([]), session_id="sess-old", outgoing=8, incoming=11)
 
     manager._sync_sequence_session("sess-new")
 
