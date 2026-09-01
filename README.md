@@ -27,7 +27,8 @@
 </div>
 
 ---
-
+> 🔄 **Notice:** This project is rebranding. We are currently moving from Zephyr to **Viento**.
+---
 ## ⚡ What is Zephyr?
 
 **Zephyr** is a robust, lightweight distributed inference runtime. It lets you take your local GPU/CPU machine running [Ollama](https://ollama.ai), [llama.cpp](https://github.com/ggerganov/llama.cpp), or [vLLM](https://github.com/vllm-project/vllm) and plug it into the Zephyr Cloud mesh — instantly turning it into a globally-addressable AI inference node.
