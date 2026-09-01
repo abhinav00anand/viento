@@ -33,6 +33,8 @@ class FakeWebSocket:
         return self.frames.pop(0)
 
     async def send(self, raw):
+        decoded = json.loads(raw)
+        assert isinstance(decoded, dict)
         self.sent.append(ProtocolEnvelope.from_json(raw))
 
     async def close(self):
