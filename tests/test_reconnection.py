@@ -57,7 +57,7 @@ class FakeWebSocket:
 
 
 class FakeWebSocketContext:
-    """Async context manager mirroring the ownership semantics of websockets.connect()."""
+    """Async context manager mirroring websockets.connect() ownership semantics."""
 
     def __init__(self, websocket):
         self.websocket = websocket
