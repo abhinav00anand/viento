@@ -57,6 +57,7 @@ class FakeWebSocket:
         self.closed = False
 
     async def recv(self):
+        await asyncio.sleep(0)
         if not self.frames:
             raise websockets.exceptions.ConnectionClosedOK(None, None)
         return self.frames.pop(0)
