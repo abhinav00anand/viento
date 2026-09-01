@@ -1,5 +1,6 @@
 """Regression tests for reconnect and logical-session sequence semantics."""
 
+import asyncio
 import json
 from types import SimpleNamespace
 
@@ -281,6 +282,7 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
     assert manager.is_connected is False
     assert manager.is_running is False
     assert manager._heartbeat_task is not None
+    await asyncio.gather(manager._heartbeat_task, return_exceptions=True)
     assert manager._heartbeat_task.cancelled() is True
 
 
