@@ -37,7 +37,7 @@ Once connected, any client with a session key can hit your node through the stan
 ```
 Your Machine (GPU/CPU)          Zephyr Cloud Gateway          Your Users
 ────────────────────           ────────────────────          ────────────
- Ollama llama3:latest   ◄─WSS─►  zephyr-i2ho.onrender.com  ◄─HTTPS─►  API Clients
+ Ollama llama3:latest   ◄─WSS─►  viento.onrender.com  ◄─HTTPS─►  API Clients
  llama.cpp phi3          secure    job routing &          OpenAI-compatible
  vLLM mistral           tunnel    load balancing          SDK / curl / apps
 ```
