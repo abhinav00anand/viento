@@ -290,6 +290,60 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
     assert manager._heartbeat_task is None
 
 
+@pytest.mark.asyncio
+async def test_start_closes_failed_handshake_transport_before_reconnect(monkeypatch):
+    failed_ws = FakeWebSocket(_handshake_frames("sess-failed"))
+    failed_frames = list(failed_ws.frames)
+    failed_frames[1] = _frame(
+        FrameType.HEARTBEAT_ACK,
+        "sess-failed",
+        1,
+        {"timestamp": 100.0},
+    )
+    failed_ws = FakeWebSocket(failed_frames)
+
+    successful_ws = FakeWebSocket(_handshake_frames("sess-recovered"))
+    sockets = [failed_ws, successful_ws]
+    connection_attempts = []
+    handshake_sessions = []
+
+    def fake_connect(*args, **kwargs):
+        connection_attempts.append(args[0])
+        return FakeWebSocketContext(sockets.pop(0))
+
+    async def fast_sleep(_delay):
+        return None
+
+    monkeypatch.setattr(connection_manager_module.websockets, "connect", fake_connect)
+    monkeypatch.setattr(connection_manager_module.asyncio, "sleep", fast_sleep)
+
+    manager = ConnectionManager(
+        config=_config(),
+        config_manager=FakeConfigManager(),
+        backend=FakeBackend(),
+    )
+    manager.telemetry = FakeTelemetry()
+
+    def on_handshake(api_key, session_id, ttl):
+        handshake_sessions.append((api_key, session_id, ttl))
+        manager.is_running = False
+        manager._shutdown_event.set()
+
+    manager.on_handshake_callback = on_handshake
+
+    await manager.start()
+
+    assert connection_attempts == [
+        "wss://example.invalid/ws",
+        "wss://example.invalid/ws",
+    ]
+    assert failed_ws.closed is True
+    assert successful_ws.closed is True
+    assert handshake_sessions == [("zph_tmp_test", "sess-recovered", 3600.0)]
+    assert manager.is_connected is False
+    assert manager.is_running is False
+
+
 def test_reconnect_welcome_with_invalid_sequence_does_not_mutate_logical_session_state():
     manager = _manager(
         FakeWebSocket([]),
