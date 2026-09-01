@@ -237,11 +237,7 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
         assert kwargs["max_size"] == 5_242_880
         return FakeWebSocketContext(sockets.pop(0))
 
-    async def fast_sleep(_delay):
-        return None
-
     monkeypatch.setattr(connection_manager_module.websockets, "connect", fake_connect)
-    monkeypatch.setattr(connection_manager_module.asyncio, "sleep", fast_sleep)
 
     manager = ConnectionManager(
         config=_config(),
@@ -249,6 +245,11 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
         backend=FakeBackend(),
     )
     manager.telemetry = FakeTelemetry()
+
+    async def fake_heartbeat_loop():
+        await manager._shutdown_event.wait()
+
+    monkeypatch.setattr(manager, "_heartbeat_loop", fake_heartbeat_loop)
 
     handshake_sessions = []
 
@@ -279,6 +280,8 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
     assert manager.expected_incoming_sequence == 6
     assert manager.is_connected is False
     assert manager.is_running is False
+    assert manager._heartbeat_task is not None
+    assert manager._heartbeat_task.cancelled() is True
 
 
 def test_reconnect_welcome_with_invalid_sequence_does_not_mutate_logical_session_state():
