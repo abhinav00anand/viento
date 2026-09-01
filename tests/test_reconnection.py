@@ -52,7 +52,7 @@ class FakeWebSocket:
     async def send(self, raw):
         decoded = json.loads(raw)
         assert isinstance(decoded, dict)
-        self.sent.append(ProtocolEnvelope.from_json(raw))
+        self.sent.append(ProtocolEnvelope.model_validate_json(raw))
 
     async def close(self):
         self.closed = True
@@ -232,6 +232,7 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
         _handshake_frames("sess-initial", start_sequence=3, api_key="zph_tmp_reconnected")
     )
     sockets = [first_ws, second_ws]
+    heartbeat_cancelled = asyncio.Event()
 
     def fake_connect(*args, **kwargs):
         assert args[0] == "wss://example.invalid/ws"
@@ -248,7 +249,11 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
     manager.telemetry = FakeTelemetry()
 
     async def fake_heartbeat_loop():
-        await manager._shutdown_event.wait()
+        try:
+            await manager._shutdown_event.wait()
+        except asyncio.CancelledError:
+            heartbeat_cancelled.set()
+            raise
 
     monkeypatch.setattr(manager, "_heartbeat_loop", fake_heartbeat_loop)
 
@@ -281,9 +286,8 @@ async def test_start_reconnects_same_logical_session_and_closes_each_transport(m
     assert manager.expected_incoming_sequence == 6
     assert manager.is_connected is False
     assert manager.is_running is False
-    assert manager._heartbeat_task is not None
-    await asyncio.gather(manager._heartbeat_task, return_exceptions=True)
-    assert manager._heartbeat_task.cancelled() is True
+    assert heartbeat_cancelled.is_set()
+    assert manager._heartbeat_task is None
 
 
 def test_reconnect_welcome_with_invalid_sequence_does_not_mutate_logical_session_state():
@@ -394,10 +398,10 @@ async def test_handshake_fails_on_unexpected_frame_type():
     result = await manager._perform_handshake(_models())
 
     assert result is False
-    assert manager.is_connected is True
+    assert manager.is_connected is False
     assert manager.session_id == "sess-unexpected"
     assert manager.expected_incoming_sequence == 1
-    assert ws.closed is False
+    assert ws.closed is True
 
 
 @pytest.mark.asyncio
@@ -416,15 +420,15 @@ async def test_handshake_fails_on_malformed_payload():
     manager = _manager(ws)
 
     with pytest.raises(ValidationError):
-        ProtocolEnvelope.from_json(frames[1])
+        ProtocolEnvelope.model_validate_json(frames[1])
 
     result = await manager._perform_handshake(_models())
 
     assert result is False
-    assert manager.is_connected is True
+    assert manager.is_connected is False
     assert manager.session_id == "sess-malformed"
     assert manager.expected_incoming_sequence == 1
-    assert ws.closed is False
+    assert ws.closed is True
 
 
 @pytest.mark.asyncio
@@ -437,7 +441,7 @@ async def test_handshake_fails_on_malformed_json():
     result = await manager._perform_handshake(_models())
 
     assert result is False
-    assert manager.is_connected is True
+    assert manager.is_connected is False
     assert manager.session_id == "sess-json"
     assert manager.expected_incoming_sequence == 1
-    assert ws.closed is False
+    assert ws.closed is True
