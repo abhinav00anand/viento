@@ -401,7 +401,10 @@ async def test_handshake_fails_on_malformed_payload():
         type=FrameType.REGISTER_ACK,
         session_id="sess-malformed",
         sequence=1,
-        payload={"registered_models": ["llama3"]},
+        payload={
+            "registered_models": ["llama3"],
+            "unexpected": True,
+        },
     ).to_json()
     ws = FakeWebSocket(frames)
     manager = _manager(ws)
