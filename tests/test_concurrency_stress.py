@@ -25,7 +25,7 @@ from viento.backends.base import (
     InferenceBackend,
 )
 from viento.protocol.envelope import FrameType, ProtocolEnvelope
-from viento.scheduler.scheduler import Job, JobScheduler, JobStatus, JobType
+from viento.scheduler.scheduler import JobScheduler, JobStatus
 from viento.telemetry.collector import TelemetryCollector
 
 
@@ -134,7 +134,9 @@ class MockStreamingBackend(InferenceBackend):
         handle = MockExecutionHandle()
         if handle_callback:
             handle_callback(handle)
-        return EmbeddingResult(embeddings=[[0.1] * 64 for _ in inputs], prompt_tokens=len(inputs) * 5)
+        return EmbeddingResult(
+            embeddings=[[0.1] * 64 for _ in inputs], prompt_tokens=len(inputs) * 5
+        )
 
     def cancel(self, job_id: str) -> None:
         pass
@@ -234,7 +236,10 @@ async def test_queue_overflow_backpressure():
 
     conn.send_job_error.assert_awaited()
     last_err_call = conn.send_job_error.call_args
-    assert "queue full" in last_err_call[1]["error_message"].lower() or "depth" in last_err_call[1]["error_message"].lower()
+    assert (
+        "queue full" in last_err_call[1]["error_message"].lower()
+        or "depth" in last_err_call[1]["error_message"].lower()
+    )
     await scheduler.stop()
 
 
@@ -278,7 +283,9 @@ async def test_rapid_cancellation_under_concurrency():
     await asyncio.sleep(1.0)
     await scheduler.stop()
 
-    assert scheduler._jobs.get("cancel_job_0") is None or scheduler._jobs["cancel_job_0"].status in [
+    assert scheduler._jobs.get("cancel_job_0") is None or scheduler._jobs[
+        "cancel_job_0"
+    ].status in [
         JobStatus.CANCELLED,
         JobStatus.CANCEL_REQUESTED,
     ]

@@ -1,21 +1,14 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types: [published]
   push:
+    branches:
+      - main
     tags:
       - "v*"
+  release:
+    types: [published]
   workflow_dispatch:
-    inputs:
-      target:
-        description: "Target repository (pypi or testpypi)"
-        required: true
-        default: "pypi"
-        type: choice
-        options:
-          - pypi
-          - testpypi
 
 jobs:
   build:
@@ -29,6 +22,31 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Auto-Bump Version per Commit / Build
+        run: |
+          python -c "
+          import re
+
+          run_num = '${{ github.run_number }}'
+          new_ver = f'0.4.{run_num}'
+
+          # Update pyproject.toml
+          with open('pyproject.toml', 'r', encoding='utf-8') as f:
+              content = f.read()
+          updated = re.sub(r'version\s*=\s*\"[^\"]+\"', f'version = \"{new_ver}\"', content)
+          with open('pyproject.toml', 'w', encoding='utf-8') as f:
+              f.write(updated)
+
+          # Update viento/__init__.py
+          with open('viento/__init__.py', 'r', encoding='utf-8') as f:
+              content = f.read()
+          updated = re.sub(r'__version__\s*=\s*\"[^\"]+\"', f'__version__ = \"{new_ver}\"', content)
+          with open('viento/__init__.py', 'w', encoding='utf-8') as f:
+              f.write(updated)
+
+          print(f'==> Successfully updated package version to: {new_ver}')
+          "
 
       - name: Install Build Dependencies
         run: |
@@ -53,10 +71,9 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: [build]
-    env:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Enables PyPI Trusted Publishing (OIDC)
+      id-token: write
       contents: read
 
     steps:
@@ -70,19 +87,16 @@ jobs:
         run: |
           ls -la dist/
 
-      - name: Publish with PyPI API Token (Twine)
-        if: env.PYPI_API_TOKEN != ''
+      - name: Publish to PyPI via API Token or OIDC
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ env.PYPI_API_TOKEN }}
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          python -m pip install --upgrade pip twine
-          twine upload dist/* --skip-existing --verbose
-
-      - name: Publish with PyPI Trusted Publisher (OIDC)
-        if: env.PYPI_API_TOKEN == ''
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-          skip-existing: true
-          verbose: true
+          pip install twine
+          if [ -n "$PYPI_API_TOKEN" ]; then
+            echo "==> Uploading packages to PyPI via API Token..."
+            twine upload dist/* -u __token__ -p "$PYPI_API_TOKEN" --skip-existing --verbose
+          else
+            echo "::error::PYPI_API_TOKEN secret is not set in GitHub repository secrets!"
+            echo "Please configure PYPI_API_TOKEN under Settings -> Secrets and variables -> Actions"
+            exit 1
+          fi
