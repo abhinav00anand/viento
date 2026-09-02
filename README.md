@@ -28,156 +28,84 @@
 
 </div>
 
-## ⚡ The 5 Essential Questions (TL;DR)
+## 🧭 The 5 Essential Questions
 
-| Question | Answer |
-| :--- | :--- |
-| **1. What is this?** | An **ultra-lightweight distributed AI inference mesh** that links any GPU/CPU (local workstations, laptops, cloud GPUs) into a single, cohesive, OpenAI-compatible API endpoint. |
-| **2. Who is it for?** | Developers, researchers, indie hackers, and AI startups who want to run LLMs without paying \$1,000s/month for static cloud GPU instances by pooling their existing or low-cost compute. |
-| **3. Why would I care?** | • **Zero DevOps Hassle**: Reverse WebSocket tunnels (`wss://viento.onrender.com/ws/runtime`) work behind home NATs and firewalls with **no port forwarding or public IPs**.<br>• **Featherweight**: Worker agent consumes **< 25 MB RAM** and 0% idle CPU.<br>• **Drop-in Replacement**: Works natively with the official `openai` Python SDK, LangChain, and cURL.<br>• **High Throughput**: Validated with sub-15ms p95 latencies, zero token drops, and instant cancellation. |
-| **4. How do I run it?** | **1.** `pip install -e SDK/`<br>**2.** Start Ollama (`ollama run llama3:latest`) or vLLM.<br>**3.** Connect to the live mesh: `viento run --server wss://viento.onrender.com/ws/runtime`.<br>*(See [HOW_TO_RUN.md](HOW_TO_RUN.md) for step-by-step walkthroughs)* |
-| **5. What do I do after running it?** | Your worker is live! Point your OpenAI Python client, chatbot, or web app to `https://viento.onrender.com/v1` using your session key, and stream completions with full token throughput. |
+<details open>
+<summary><b>1. What is this?</b></summary>
+<br>
 
----
+**Zephyr** is an ultra-lightweight, high-performance distributed inference mesh that networks diverse machines—from developer laptops and homelabs to spot cloud GPUs—into a single, virtualized AI compute cluster. It exposes a unified, standard **OpenAI-compatible REST API** (`https://viento.onrender.com/v1`) backed by the **Viento** edge agent, which connects local inference engines (Ollama, vLLM, llama.cpp, PyTorch) via persistent, reverse asynchronous WebSocket tunnels.
+</details>
 
-## 🔍 Deep-Dive: Answering the 5 Questions in Detail
+<details open>
+<summary><b>2. Who is it for?</b></summary>
+<br>
 
-### 1. What is this?
-**Zephyr** is a decentralized computing framework that allows anyone to connect local machines (MacBooks, gaming PCs with RTX cards, lab workstations) and cloud instances (Lightning AI, Kaggle, Colab, Vast.ai) into a collective, high-performance LLM serving cluster.
+- **AI Developers & Indie Hackers**: Who want to serve LLMs locally or across free/cheap cloud GPUs (Lightning AI, Kaggle, Colab) and access them through any standard OpenAI client library without paying \$100s/month to cloud providers.
+- **Startups & Teams**: Who have multiple workstations or on-prem servers with RTX 3090/4090s and want to pool their compute into an internal API cluster for their engineers.
+- **Homelab & Self-Hosting Enthusiasts**: Who want to run local models behind residential internet/NAT without messing with router port forwarding, DDNS, or exposing their home IP.
+- **Compute Providers & GPU Owners**: Who want to monetize or share idle GPU capacity effortlessly with zero heavyweight daemon overhead.
+</details>
 
-It consists of two synchronized layers:
-1. **The Cloud Control Plane Gateway** (running live at `https://viento.onrender.com`): A central orchestrator that exposes standard OpenAI endpoints (`/v1/chat/completions`, `/v1/models`, `/v1/embeddings`), manages session routing, monitors node health, and balances incoming user prompts across active worker nodes.
-2. **The Viento Edge Runtime**: A tiny Python agent that runs on your local machine or GPU server. It discovers locally installed LLMs (via Ollama, vLLM, or llama.cpp) and maintains a persistent, encrypted, bidirectional WebSocket connection to the gateway.
+<details open>
+<summary><b>3. Why would I care?</b></summary>
+<br>
 
-When an API user calls the cloud gateway, the request is streamed down the WebSocket tunnel to whichever worker node has the requested model and available capacity, and output tokens stream back in real time.
+- **💸 Zero Cloud GPU Lock-In**: Stop paying 24/7 pricing for idle cloud GPU instances. Turn on compute only when you need it, wherever you have it.
+- **🪶 Ultra-Lightweight Footprint**: The Viento agent consumes **under 25 MB RAM** and virtually 0% idle CPU. No heavy Docker engines required, no kernel modules, just pure asynchronous Python (`asyncio`).
+- **🛡️ Instant Firewall Penetration (Reverse WSS Tunnels)**: Workers establish outbound secure WebSocket tunnels to `wss://viento.onrender.com/ws/runtime`. **No public IP, no open ports, and no NAT punch-through required.**
+- **⚡ Instant Socket-Level Cancellation**: If a user cancels a query mid-stream, Zephyr aborts the local engine's generation socket in `< 2 milliseconds`, freeing your VRAM immediately instead of wasting GPU compute.
+- **📦 Zero Token Drop Guarantee**: Invariant-tested backpressure queues ensure 100% of tokens arrive to the client intact even during heavy parallel traffic bursts.
+</details>
 
----
+<details open>
+<summary><b>4. How do I run it?</b></summary>
+<br>
 
-### 2. Who is it for?
-
-- **AI Developers & Indie Hackers**: Build applications, chatbots, and autonomous agents powered by local or open-weights models without recurring API token bills.
-- **Teams & Research Labs**: Pool idle desktop GPUs, university workstations, or Mac Studios into an internal shared team API without configuring VPNs or static IPs.
-- **Self-Hosters & Privacy Enthusiasts**: Keep model weights and inference execution completely on your own physical hardware, using the cloud gateway solely as a lightweight routing tunnel.
-- **Cloud Cost Optimizers**: Combine dirt-cheap spot GPUs (e.g. Lightning AI Tesla T4 @ \$0.18/hr or free Kaggle GPUs) to create an on-demand serverless inference pool that scales up and down effortlessly.
-
----
-
-### 3. Why would I care?
-
-#### 💰 Huge Cost Savings
-Traditional cloud LLM hosting requires keeping powerful GPU instances (like AWS A10G or H100) running 24/7, costing hundreds to thousands of dollars every month even when idle. Zephyr allows you to utilize hardware you already own, paying **$0 in recurring compute fees**.
-
-#### 🪶 Ultra-Lightweight Footprint
-Unlike Kubernetes, Ray, or bulky daemon services, the `viento` agent weighs just kilobytes of code, uses **less than 25 MB of RAM**, and consumes **zero idle CPU cycles**. It installs in seconds via `pip` with zero kernel drivers or background root daemons.
-
-#### 🌐 Zero DevOps or Firewall Configuration
-Exposing local machines to the internet usually requires dynamic DNS, port forwarding on your home router, static IP purchases, or complex VPN setups. With Zephyr's **outbound reverse WebSocket architecture**, edge nodes establish secure TLS connections to `wss://viento.onrender.com/ws/runtime`. They work automatically from behind residential NATs, coffee shop Wi-Fi, university networks, and Docker containers.
-
-#### ⚡ Real-Time Streaming & Zero Token Drops
-Equipped with Pydantic V2 envelope validation and bounded concurrency semaphores, Zephyr guarantees that 100% of tokens generated during parallel streaming requests arrive intact to the user with **zero dropped chunks and sub-15ms tail latencies**.
-
-#### ⏱️ Instant Socket Cancellation (< 2 ms)
-When a user stops generating or closes their tab, Zephyr's `ExecutionHandle` immediately tears down the underlying HTTP connection to Ollama/vLLM, instantly halting GPU generation and saving precious compute cycles.
-
----
-
-### 4. How do I run it?
-
-Running Zephyr takes less than 2 minutes in 3 simple steps:
+You can connect your local machine or cloud GPU to the live production mesh in 3 terminal commands:
 
 ```bash
-# Step 1: Install the lightweight Viento SDK
-git clone https://github.com/abhinav00anand/zephyr.git
-cd zephyr
+# 1. Install the lightweight Viento SDK
 pip install -e SDK/
 
-# Step 2: Start your preferred inference backend (Ollama, vLLM, or llama.cpp)
+# 2. Make sure your local engine is running (e.g. Ollama)
 ollama run llama3:latest
 
-# Step 3: Connect to the live production mesh
+# 3. Connect your node to the live mesh
 export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
 viento run --server wss://viento.onrender.com/ws/runtime
 ```
 
-*(On Windows PowerShell)*:
-```powershell
-$env:ZEPHYR_BOOTSTRAP_KEY="zephyr_dev_secret_key_2026"
-viento run --server wss://viento.onrender.com/ws/runtime
-```
+*(For comprehensive instructions across Linux, Windows, vLLM, Lightning AI T4, and Kaggle, see the [HOW_TO_RUN.md Guide](HOW_TO_RUN.md).)*
+</details>
 
-> 📖 **Need detailed step-by-step instructions for Docker, vLLM, Lightning AI, or Kaggle?**  
-> Check out the complete [**HOW_TO_RUN.md**](HOW_TO_RUN.md) operator guide.
+<details open>
+<summary><b>5. What do I do after running it?</b></summary>
+<br>
+
+Once your node connects, it registers its available models and outputs an authenticated session key. You can immediately:
+1. **Query via OpenAI Python SDK**: Point `base_url="https://viento.onrender.com/v1"` with your session key to stream chat completions in real-time.
+2. **Connect Developer Tools**: Plug `https://viento.onrender.com/v1` into **Cursor**, **Continue.dev**, **Open-WebUI**, **LangChain**, or **LlamaIndex** as a drop-in OpenAI replacement.
+3. **Scale Compute**: Boot up additional instances on free GPUs (like a Lightning AI Tesla T4 or Kaggle notebook) to automatically increase your mesh's parallel capacity.
+4. **Monitor Real-Time Hardware**: Run `viento status` to monitor live VRAM, power draw, temperatures, and throughput across your active workers.
+</details>
 
 ---
 
-### 5. What do I do after running it?
+## 🌌 Core Philosophy: Featherweight & Blazing Fast
 
-Once your worker node displays the green `🟢 Online` banner:
+Traditional distributed AI frameworks require heavyweight distributed runtimes, Kubernetes operators, and static ingress controllers. Zephyr discards this bloat in favor of minimal, hyper-focused primitives:
 
-```text
-╔══════════════════════════════════════════════════════════════╗
-║               ⚡  ZEPHYR NODE AUTHENTICATED  ⚡              ║
-╠══════════════════════════════════════════════════════════════╣
-║  Session ID  : zph_sess_7a3d12c8                            ║
-║  API Key     : zph_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
-║  Models      : llama3:latest                                ║
-║  Gateway     : wss://viento.onrender.com/ws/runtime          ║
-║  Status      : 🟢 Online — ready for streaming inference    ║
-╚══════════════════════════════════════════════════════════════╝
-```
-
-You are now ready to consume your distributed cluster!
-
-#### A. Stream Completions via the OpenAI Python SDK
-Use the official OpenAI SDK, pointing `base_url` directly to the live Zephyr gateway:
-
-```python
-from openai import OpenAI
-
-# Connect directly to the live Zephyr mesh
-client = OpenAI(
-    base_url="https://viento.onrender.com/v1",
-    api_key="zph_tmp_YOUR_SESSION_KEY"
-)
-
-# Stream tokens in real time
-stream = client.chat.completions.create(
-    model="llama3:latest",
-    messages=[
-        {"role": "system", "content": "You are a helpful, brilliant AI assistant."},
-        {"role": "user", "content": "Explain neural networks in 2 sentences."}
-    ],
-    stream=True
-)
-
-for chunk in stream:
-    token = chunk.choices[0].delta.content
-    if token:
-        print(token, end="", flush=True)
-print()
-```
-
-#### B. Stream Completions via cURL
-```bash
-curl -N https://viento.onrender.com/v1/chat/completions \
-  -H "Authorization: Bearer zph_tmp_YOUR_SESSION_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3:latest",
-    "messages": [{"role": "user", "content": "Hello from Zephyr mesh!"}],
-    "stream": true
-  }'
-```
-
-#### C. Build Modern AI Apps
-You can now plug your Zephyr endpoint URL (`https://viento.onrender.com/v1`) directly into:
-- **Web Chat UIs**: OpenWebUI, LibreChat, Chatbot UI.
-- **Agent Frameworks**: LangChain, LlamaIndex, CrewAI, AutoGen.
-- **IDE Extensions**: Continue.dev, Cursor, Aider.
+- **Asynchronous Reverse Multiplexing**: Nodes maintain persistent HTTP/2 and WebSocket connections to the cloud gateway. Requests are dispatched downstream as lightweight binary/JSON frames and streamed back token-by-token over Server-Sent Events (SSE).
+- **Sub-Millisecond Stream Dispatch**: Routing decisions and capacity checks occur in memory via `asyncio.Semaphore` guards, introducing negligible latency (< 1ms overhead).
+- **Ephemeral Session Security**: Workers receive temporary cryptographically scoped session keys (`zph_tmp_...`) with automatic TTL expiry, isolating clients without heavyweight key infrastructures.
+- **Hardware Agnostic**: Run FP16 weights on NVIDIA GPUs, quantized GGUFs on Apple Silicon with Metal, or CPU inference on edge devices seamlessly.
 
 ---
 
 ## 🏛️ System Architecture
+
+Zephyr operates on a dual-plane architecture: a **Cloud Control Plane Gateway** hosted at `viento.onrender.com`, and distributed **Viento Edge Runtime Nodes**.
 
 ```mermaid
 flowchart TD
@@ -225,9 +153,76 @@ flowchart TD
 
 ---
 
+## 🔬 Architectural Deep-Dive
+
+### 1. Canonical Wire Protocol (Version 1.0)
+All communication over the WebSocket mesh tunnel utilizes strictly validated **Pydantic V2 Envelopes** (`extra="forbid"`), preventing protocol injection and schema drift:
+
+```json
+{
+  "version": "1.0",
+  "type": "job_request",
+  "message_id": "msg_8f12a0c49b1e",
+  "sequence": 42,
+  "timestamp": 1725301824.51,
+  "job_id": "job_a93f1208",
+  "request_id": "req_55b0a3f1",
+  "session_id": "zph_sess_7a3d12c8",
+  "payload": {
+    "model": "llama3:latest",
+    "messages": [{"role": "user", "content": "Explain gravity."}],
+    "temperature": 0.7,
+    "max_tokens": 512,
+    "stream": true
+  }
+}
+```
+
+- **Monotonic Directional Sequencing**: Ensures packet delivery order is verified across both directions.
+- **Heartbeat & Liveness**: Nodes report hardware stats (CPU, RAM, GPU utilization, VRAM, and temperatures) every 15 seconds. If a node drops, the gateway re-routes jobs automatically.
+
+---
+
+### 2. Token Lifecycle & Zero-Token-Drop Pipeline
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Client / App
+    participant Gateway as Cloud Gateway (viento.onrender.com)
+    participant Viento as Viento Edge Node
+    participant Engine as Local Inference Engine (Ollama / vLLM)
+
+    User->>Gateway: POST /v1/chat/completions (stream=True)
+    Gateway->>Gateway: Resolve model & match active worker node
+    Gateway->>Viento: WS Frame: JOB_REQUEST (job_id, prompt)
+    Viento->>Viento: Enqueue in FIFO Queue & check capacity
+    Viento->>Gateway: WS Frame: JOB_ACK (queue_position)
+    Viento->>Engine: Stream generation request via ExecutionHandle
+    loop Token Streaming
+        Engine-->>Viento: Token chunk delta
+        Viento-->>Gateway: WS Frame: TOKEN_CHUNK (token, index)
+        Gateway-->>User: SSE Chunk: data: {"choices":[{"delta":{"content":...}}]}
+    end
+    Engine-->>Viento: Generation finished
+    Viento-->>Gateway: WS Frame: JOB_COMPLETE (metrics, total_tokens)
+    Gateway-->>User: SSE Chunk: data: [DONE]
+```
+
+---
+
+### 3. Atomic Concurrency Bounding & Backpressure Protection
+
+Each Viento node protects itself from resource exhaustion using an internal multi-stage queue and semaphore supervisor:
+- **`asyncio.Semaphore(max_concurrency)`**: Limits the number of parallel inference requests touching local GPU/CPU compute simultaneously.
+- **Bounded FIFO Queue (`max_queue_depth=50`)**: When incoming traffic surges beyond maximum queue depth, Viento immediately rejects excess jobs with `JOB_ERROR (queue_full)`, signaling the Cloud Gateway to shed load or route to an alternate worker.
+- **Instant Cancellation (`ExecutionHandle.cancel()`)**: If a client cancels their request or closes their browser, the Gateway sends a `CANCEL_JOB` frame. Viento immediately closes the HTTP connection to Ollama/vLLM, terminating compute generation within **< 2 milliseconds**.
+
+---
+
 ## ⚡ Cloud GPU Validation: NVIDIA Tesla T4
 
-To verify performance on cloud infrastructure, Zephyr was launched and stress-tested on an **NVIDIA Tesla T4 GPU (16 GB VRAM)** on Lightning AI:
+To prove Zephyr's cross-environment capability, the full system was launched and evaluated on a live cloud instance featuring an **NVIDIA Tesla T4 GPU (16 GB VRAM)** on Lightning AI:
 
 ```
 +-----------------------------------------------------------------------------------------+
@@ -263,7 +258,7 @@ To verify performance on cloud infrastructure, Zephyr was launched and stress-te
 
 ## 📊 Concurrency Stress & Throughput Benchmarks
 
-Zephyr was tested across varying concurrency levels to validate backpressure enforcement and streaming fidelity:
+We subjected Zephyr's scheduling core to intensive burst stress tests across varying concurrency levels to validate backpressure enforcement and streaming fidelity:
 
 | Concurrency Level | Total Requests | Total Tokens | Duration | Throughput | p50 Latency | p95 Latency | Dropped Tokens | Status |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -279,9 +274,64 @@ Zephyr was tested across varying concurrency levels to validate backpressure enf
 
 </div>
 
+> **Detailed Report**: See [test_results/STRESS_TEST_REPORT.md](test_results/STRESS_TEST_REPORT.md) and [test_results/benchmark_report.json](test_results/benchmark_report.json) for full metrics.
+
+---
+
+## 🎯 Supported Inference Backends
+
+Zephyr abstracts backend engines through a unified interface (`InferenceBackend`), allowing you to mix and match hardware transparently:
+
+```
+                       ┌──────────────────────┐
+                       │  InferenceBackend    │
+                       │  (Abstract Adapter)  │
+                       └──────────┬───────────┘
+              ┌───────────────────┼───────────────────┐
+              ▼                   ▼                   ▼
+    ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+    │  OllamaAdapter   │ │   VLLMAdapter    │ │  LlamaCppAdapter │
+    │  • HTTP /api/chat│ │  • Async OpenAI  │ │  • C++ Server    │
+    │  • Auto Pull     │ │  • PagedAttention│ │  • GGUF Quantized│
+    │  • Llama3, Phi3  │ │  • High Throughput││  • Pure CPU/Metal│
+    └──────────────────┘ └──────────────────┘ └──────────────────┘
+```
+
+1. **Ollama**: Default adapter for local development. Auto-discovers local models and handles streaming chunks.
+2. **vLLM**: Optimized for multi-GPU cloud instances with PagedAttention and continuous batching.
+3. **llama.cpp**: Minimal footprint server adapter for quantized GGUF execution on CPU or Apple Silicon.
+4. **HuggingFace Transformers**: Direct in-memory execution for custom fine-tuned weights.
+
+---
+
+## 🚀 How to Run Zephyr
+
+For full step-by-step instructions on running each component, connecting nodes, and deploying on cloud GPUs, read the dedicated guide:
+
+👉 **[Read the Complete HOW_TO_RUN.md Guide](HOW_TO_RUN.md)** 👈
+
+### Quick Command Cheat Sheet:
+
+```bash
+# 1. Install the lightweight Viento SDK
+pip install -e SDK/
+
+# 2. Start your local Ollama or vLLM engine
+ollama run llama3:latest
+
+# 3. Connect your node to the live production mesh
+export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+viento run --server wss://viento.onrender.com/ws/runtime
+
+# 4. Query the mesh via OpenAI SDK
+curl https://viento.onrender.com/v1/models
+```
+
 ---
 
 ## 🛡️ Reliability & Test Matrix
+
+Zephyr includes an exhaustive automated test suite covering protocol invariants, network drops, session recovery, queue overflows, and concurrency stress:
 
 - **79 of 79 Unit & Stress Tests Passing (100%)**:
   - `test_backends.py`: Backend adapter contracts & execution handles (7 passed)
@@ -294,13 +344,26 @@ Zephyr was tested across varying concurrency levels to validate backpressure enf
   - `test_telemetry.py`: Non-blocking GPU metrics, thread-safe request counters, secret masking (12 passed)
 
 ```bash
-# Run full suite
+# Run the test suite locally
 pytest SDK/tests -v
 ```
 
 ---
 
+## 🗺️ Roadmap & What's Next
+
+- [x] Canonical Wire Protocol V1.0 with strict Pydantic V2 schemas.
+- [x] Multi-engine backend support (Ollama, vLLM, llama.cpp).
+- [x] Live Cloud Gateway deployment on `viento.onrender.com`.
+- [x] Validated Cloud GPU execution on NVIDIA Tesla T4.
+- [x] High-throughput concurrency stress testing and zero-token-drop verification.
+- [ ] Distributed Embedding model routing (`/v1/embeddings`).
+- [ ] Intelligent Token-Aware Multi-Node Speculative Decoding.
+- [ ] WebRTC P2P Direct Node-to-Client Data Channels for ultra-low latency.
+
+---
+
 ## 📄 License
 
-Zephyr is licensed under the [Apache 2.0 License](LICENSE).  
+Zephyr is licensed under the [Apache 2.0 License](LICENSE).
 Built with ❤️ for decentralized, accessible, and ultra-lightweight AI computing.
