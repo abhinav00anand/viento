@@ -15,14 +15,14 @@ Quick Start:
 Run as a node:
     $ viento run
 
-Documentation: https://github.com/abhinav00anand/zephyr
+Documentation: https://github.com/abhinav00anand/viento
 """
 
 __version__ = "0.4.0"
 __author__ = "Viento Cloud Team"
 __email__ = "indrohelpdesk@gmail.com"
 __license__ = "MIT"
-__url__ = "https://github.com/abhinav00anand/zephyr"
+__url__ = "https://github.com/abhinav00anand/viento"
 
 from viento.client.client import AsyncVientoClient, VientoClient
 

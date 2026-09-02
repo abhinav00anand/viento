@@ -31,14 +31,14 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 ## How to Contribute
 
 ### Bug Reports
-File a detailed issue at [GitHub Issues](https://github.com/abhinav00anand/zephyr/issues) using the **Bug Report** template. Include:
+File a detailed issue at [GitHub Issues](https://github.com/abhinav00anand/viento/issues) using the **Bug Report** template. Include:
 - Python version, OS, Viento SDK version
 - Minimal reproduction steps
 - Expected vs actual behavior
 - Stack trace (if applicable)
 
 ### Feature Requests
-Open a [GitHub Discussion](https://github.com/abhinav00anand/zephyr/discussions) or issue using the **Feature Request** template. Describe:
+Open a [GitHub Discussion](https://github.com/abhinav00anand/viento/discussions) or issue using the **Feature Request** template. Describe:
 - The problem you're solving
 - Your proposed solution
 - Alternatives you considered

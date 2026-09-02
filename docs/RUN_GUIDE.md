@@ -216,7 +216,7 @@ studio.start(machine=Machine.T4)
 
 # 3. Clone and boot the node
 print(studio.run("""
-git clone https://github.com/abhinav00anand/zephyr.git
+git clone https://github.com/abhinav00anand/viento.git
 cd viento
 pip install -e SDK/
 viento run --server wss://viento.onrender.com/ws/runtime

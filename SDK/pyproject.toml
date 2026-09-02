@@ -67,11 +67,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/abhinav00anand/zephyr"
-Documentation = "https://github.com/abhinav00anand/zephyr/tree/main/docs"
-Repository = "https://github.com/abhinav00anand/zephyr"
-"Bug Tracker" = "https://github.com/abhinav00anand/zephyr/issues"
-Changelog = "https://github.com/abhinav00anand/zephyr/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/abhinav00anand/viento"
+Documentation = "https://github.com/abhinav00anand/viento/tree/main/docs"
+Repository = "https://github.com/abhinav00anand/viento"
+"Bug Tracker" = "https://github.com/abhinav00anand/viento/issues"
+Changelog = "https://github.com/abhinav00anand/viento/blob/main/CHANGELOG.md"
 
 [project.scripts]
 viento = "viento.cli.main:cli"

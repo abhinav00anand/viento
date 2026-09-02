@@ -111,7 +111,7 @@ python scripts/review_agent.py --base main --head HEAD
 python scripts/review_agent.py --base main --head HEAD --deep --output review_report.md
 
 # Review a remote PR and post review comment directly to GitHub
-python scripts/review_agent.py --repo abhinav00anand/zephyr --pr 1 --deep --post-comment
+python scripts/review_agent.py --repo abhinav00anand/viento --pr 1 --deep --post-comment
 ```
 
 ---

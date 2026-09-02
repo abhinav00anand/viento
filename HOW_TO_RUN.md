@@ -26,7 +26,7 @@ If you want to contribute compute (local GPU, CPU, or cloud instance) to the liv
 ### Step 1: Install Viento SDK
 ```bash
 # Clone the repository
-git clone https://github.com/abhinav00anand/zephyr.git
+git clone https://github.com/abhinav00anand/viento.git
 cd viento
 
 # Install the lightweight SDK in editable mode
@@ -181,7 +181,7 @@ You can run worker nodes on free or low-cost cloud GPUs in just a few minutes.
 
 3. Or launch manually from inside your Lightning Studio terminal:
    ```bash
-   git clone https://github.com/abhinav00anand/zephyr.git
+   git clone https://github.com/abhinav00anand/viento.git
    cd viento
    pip install -e SDK/
    export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
@@ -191,7 +191,7 @@ You can run worker nodes on free or low-cost cloud GPUs in just a few minutes.
 ### 📓 Kaggle Notebook (Free 2x Tesla T4 GPUs)
 In a Kaggle Python notebook with GPU enabled:
 ```python
-!git clone https://github.com/abhinav00anand/zephyr.git
+!git clone https://github.com/abhinav00anand/viento.git
 %cd viento
 !pip install -q -e SDK/
 
