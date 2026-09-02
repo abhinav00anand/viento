@@ -54,11 +54,8 @@ jobs:
     name: Publish to PyPI
     needs: [build]
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/viento
     permissions:
-      id-token: write  # Mandatory for PyPI Trusted Publishing (OIDC)
+      id-token: write  # Enables PyPI Trusted Publishing (OIDC)
       contents: read
 
     steps:
