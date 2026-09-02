@@ -28,7 +28,6 @@ from viento.backends.ollama import OllamaAdapter
 from viento.config.loader import ConfigManager, ZephyrConfig
 from viento.protocol.envelope import (
     CancelAckPayload,
-    EmbeddingResponsePayload,
     FrameType,
     HardwareSpecs,
     HeartbeatPayload,
@@ -39,6 +38,7 @@ from viento.protocol.envelope import (
     ModelInfo,
     ProtocolEnvelope,
     RegisterPayload,
+    SessionReadyPayload,
     TokenChunkPayload,
 )
 from viento.telemetry.collector import TelemetryCollector
@@ -49,6 +49,10 @@ logger = logging.getLogger("viento.connection")
 class ConnectionManager:
     """
     Supervisor managing persistent WebSocket connection with Zephyr Cloud gateway.
+
+    Sequence counters are scoped to the logical Zephyr session rather than the
+    underlying WebSocket connection. This allows reconnects to resume an
+    established session without silently replaying sequence numbers.
     """
 
     def __init__(
@@ -62,15 +66,18 @@ class ConnectionManager:
         self.backend: InferenceBackend = backend or OllamaAdapter(base_url=self.config.ollama_url)
         self.telemetry = TelemetryCollector()
 
+        # Sequence state is logical-session scoped and survives transport reconnects.
+        self.next_outgoing_sequence: int = 0
+        self.expected_incoming_sequence: int = 0
+        self._sequence_session_id: Optional[str] = None
+        self._sequence_state_initialized: bool = False
+
         self.ws: Optional[WebSocketClientProtocol] = None
         self.is_connected: bool = False
         self.is_running: bool = False
         self.session_id: Optional[str] = None
         self.active_api_key: Optional[str] = None
         self.key_expires_at: Optional[float] = None
-
-        self.next_outgoing_sequence: int = 0
-        self.expected_incoming_sequence: int = 0
 
         self._heartbeat_task: Optional[asyncio.Task] = None
         self._shutdown_event: Optional[asyncio.Event] = None
@@ -81,6 +88,48 @@ class ConnectionManager:
         self.on_embedding_received_callback: Optional[Callable[[ProtocolEnvelope], None]] = None
         self.on_job_cancel_callback: Optional[Callable[[str], None]] = None
         self.on_disconnect_callback: Optional[Callable[[], None]] = None
+
+    def _reset_sequence_state(self, session_id: Optional[str]) -> None:
+        """Reset sequence counters only when the logical session changes."""
+        self._sequence_session_id = session_id
+        self.next_outgoing_sequence = 0
+        self.expected_incoming_sequence = 0
+        self._sequence_state_initialized = True
+
+    def _sync_sequence_session(self, session_id: Optional[str]) -> None:
+        """Synchronize sequence state with a newly established logical session."""
+        if not self._sequence_state_initialized or session_id != self._sequence_session_id:
+            self._reset_sequence_state(session_id)
+
+    def _validate_welcome_sequence(
+        self, envelope: ProtocolEnvelope, previous_session_id: Optional[str]
+    ) -> bool:
+        """Validate WELCOME against the expected sequence for a new or resumed session.
+
+        A new logical session always starts its inbound sequence at zero. A resumed
+        logical session must continue exactly at the next expected sequence.
+        """
+        if not envelope.session_id:
+            logger.error("WELCOME did not include a session_id")
+            self.is_connected = False
+            return False
+
+        if previous_session_id is None or envelope.session_id != previous_session_id:
+            expected = 0
+        else:
+            expected = self.expected_incoming_sequence
+
+        if envelope.sequence != expected:
+            logger.error(
+                "Invalid WELCOME sequence %d for session %r (expected %d).",
+                envelope.sequence,
+                envelope.session_id,
+                expected,
+            )
+            self.is_connected = False
+            return False
+
+        return True
 
     def _get_next_sequence(self) -> int:
         seq = self.next_outgoing_sequence
@@ -124,8 +173,9 @@ class ConnectionManager:
                 ) as ws:
                     self.ws = ws
                     self.is_connected = True
-                    self.next_outgoing_sequence = 0
-                    self.expected_incoming_sequence = 0
+                    # Do not reset logical-session sequence counters on reconnect.
+                    # _perform_handshake() establishes a new sequence epoch only when
+                    # the gateway assigns a different logical session_id.
                     backoff = 1.0
 
                     handshake_success = await self._perform_handshake(models)
@@ -195,7 +245,16 @@ class ConnectionManager:
             return []
 
     def _validate_incoming_sequence(self, envelope: ProtocolEnvelope) -> bool:
-        """Validate incoming sequence number strictly per session direction."""
+        """Validate incoming sequence strictly within the active logical session."""
+        if self.session_id is None or envelope.session_id != self.session_id:
+            logger.error(
+                "Rejecting frame with session_id=%r for active session_id=%r.",
+                envelope.session_id,
+                self.session_id,
+            )
+            self.is_connected = False
+            return False
+
         incoming_seq = envelope.sequence
         expected = self.expected_incoming_sequence
 
@@ -220,12 +279,12 @@ class ConnectionManager:
 
     async def _perform_handshake(self, models: List[ModelInfo]) -> bool:
         try:
-            # 1. Send HELLO
+            # HELLO is sent using the currently known logical session (if any).
             hello_payload = HelloPayload(
                 runtime_id=self.config.node_name,
                 version="1.0.0",
                 auth_key=self.config.bootstrap_key or None,
-                session_id=self.session_id,  # Reconnect recovery hint
+                session_id=self.session_id,
             )
             hello_envelope = ProtocolEnvelope(
                 type=FrameType.HELLO,
@@ -240,16 +299,24 @@ class ConnectionManager:
                 logger.error(f"Expected WELCOME, got: {welcome_envelope.type}")
                 return False
 
-            if not self._validate_incoming_sequence(welcome_envelope):
+            previous_session_id = self._sequence_session_id
+            if not self._validate_welcome_sequence(welcome_envelope, previous_session_id):
                 return False
 
-            p_welcome = welcome_envelope.payload
-            self.session_id = p_welcome.get("session_id", f"sess_{int(time.time())}")
+            welcome_session_id = welcome_envelope.session_id
 
-            # 2. Collect Real Hardware Snapshot
+            # A different logical session starts a fresh sequence epoch. A resumed
+            # session retains both directions' counters across the transport reconnect.
+            if welcome_session_id != previous_session_id:
+                self._reset_sequence_state(welcome_session_id)
+
+            self.session_id = welcome_session_id
+            # Consume WELCOME as the first inbound frame of the active session.
+            self.expected_incoming_sequence = welcome_envelope.sequence + 1
+
+            # Collect Real Hardware Snapshot
             hw_snap = self.telemetry.get_hardware_snapshot()
 
-            # Extract GPU stats if present
             gpu_name = "CPU"
             vram_total_mb = 0
             vram_used_mb = 0
@@ -307,10 +374,10 @@ class ConnectionManager:
             if not self._validate_incoming_sequence(session_ready_envelope):
                 return False
 
-            p_ready = session_ready_envelope.payload
-            self.active_api_key = p_ready.get("api_key")
-            ttl = float(p_ready.get("ttl_seconds", 3600))
-            self.key_expires_at = float(p_ready.get("expires_at", time.time() + ttl))
+            p_ready = SessionReadyPayload.model_validate(session_ready_envelope.payload)
+            self.active_api_key = p_ready.api_key.get_secret_value()
+            ttl = float(p_ready.ttl_seconds)
+            self.key_expires_at = p_ready.expires_at
 
             self.config_manager.update_runtime_state(
                 session_id=self.session_id,
@@ -377,7 +444,6 @@ class ConnectionManager:
                                 await self.on_job_cancel_callback(job_id)
                             else:
                                 self.on_job_cancel_callback(job_id)
-                        # Transmit CANCEL_ACK ONLY AFTER cancellation processing is complete!
                         await self.send_cancel_ack(job_id, envelope.request_id)
                 elif msg_type in (
                     FrameType.HEARTBEAT_ACK,
@@ -455,31 +521,6 @@ class ConnectionManager:
         )
         envelope = ProtocolEnvelope(
             type=FrameType.JOB_COMPLETE,
-            request_id=request_id,
-            job_id=job_id,
-            payload=payload.model_dump(),
-        )
-        await self.send_envelope(envelope)
-
-    async def send_embedding_response(
-        self,
-        job_id: str,
-        model: str,
-        embeddings: List[List[float]],
-        request_id: Optional[str] = None,
-        prompt_tokens: int = 0,
-        total_tokens: int = 0,
-        is_estimated: bool = False,
-    ) -> None:
-        payload = EmbeddingResponsePayload(
-            model=model,
-            embeddings=embeddings,
-            prompt_tokens=prompt_tokens,
-            total_tokens=total_tokens,
-            is_estimated=is_estimated,
-        )
-        envelope = ProtocolEnvelope(
-            type=FrameType.EMBEDDING_RESPONSE,
             request_id=request_id,
             job_id=job_id,
             payload=payload.model_dump(),

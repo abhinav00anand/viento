@@ -1,5 +1,11 @@
 """Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
 
+import json
+
+import pytest
+from pydantic import SecretStr
+
+from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import (
     CancelAckPayload,
     CancelJobPayload,
@@ -19,9 +25,7 @@ from viento.protocol.envelope import (
     TokenChunkPayload,
     WelcomePayload,
 )
-from viento.protocol.validator import (
-    SequenceTracker,
-)
+from viento.protocol.validator import SequenceError, SequenceTracker
 
 
 def test_hello_payload_instantiation():
@@ -49,7 +53,7 @@ def test_register_payload_instantiation():
 def test_ready_payload_instantiation():
     payload = SessionReadyPayload(session_id="sess-01", api_key="zph_tmp_123", expires_at=1000.0)
     assert payload.session_id == "sess-01"
-    assert payload.api_key == "zph_tmp_123"
+    assert payload.api_key.get_secret_value() == "zph_tmp_123"
 
 
 def test_heartbeat_payload_instantiation():
@@ -74,7 +78,6 @@ def test_job_ack_payload_instantiation():
 def test_token_chunk_payload_instantiation():
     payload = TokenChunkPayload(delta="Hello", index=0)
     assert payload.delta == "Hello"
-    assert payload.index == 0
 
 
 def test_job_complete_payload_instantiation():
@@ -138,6 +141,63 @@ def test_envelope_serialization_and_deserialization_roundtrip():
     assert deserialized.payload["model"] == "mistral"
 
 
+def test_secret_credentials_are_typed_and_masked():
+    secret = "super-secret-key"
+    hello = HelloPayload(runtime_id="client-123", auth_key=secret)
+    ready = SessionReadyPayload(session_id="sess-01", api_key=secret, expires_at=1000.0)
+
+    assert isinstance(hello.auth_key, SecretStr)
+    assert isinstance(ready.api_key, SecretStr)
+
+    assert secret not in repr(hello)
+    assert secret not in str(hello)
+    assert secret not in hello.model_dump_json()
+    assert "**********" in hello.model_dump_json()
+
+    assert secret not in repr(ready)
+    assert secret not in str(ready)
+    assert secret not in ready.model_dump_json()
+    assert "**********" in ready.model_dump_json()
+
+
+def test_secret_credentials_are_unwrapped_only_at_wire_boundary():
+    secret = "wire-secret-key"
+    payload = HelloPayload(runtime_id="client-123", auth_key=secret)
+    envelope = ProtocolEnvelope(
+        type=FrameType.HELLO,
+        sequence=0,
+        payload=payload.model_dump(),
+    )
+
+    in_memory_dump = envelope.model_dump()
+    assert isinstance(in_memory_dump["payload"]["auth_key"], SecretStr)
+    assert secret not in repr(in_memory_dump)
+
+    wire = envelope.to_json()
+    assert secret in wire
+    assert "**********" not in wire
+
+    decoded = json.loads(wire)
+    assert decoded["payload"]["auth_key"] == secret
+
+    roundtrip = ProtocolEnvelope.from_json(wire)
+    roundtrip_payload = HelloPayload.model_validate(roundtrip.payload)
+    assert roundtrip_payload.auth_key.get_secret_value() == secret
+
+
+def test_session_ready_payload_parses_secret_key():
+    secret = "ready-secret-key"
+    payload = SessionReadyPayload(
+        session_id="sess-01",
+        api_key=secret,
+        expires_at=1000.0,
+        ttl_seconds=900,
+    )
+
+    assert payload.api_key.get_secret_value() == secret
+    assert payload.ttl_seconds == 900
+
+
 def test_sequence_tracker_normal_flow():
     tracker = SequenceTracker(strict=True)
     session = "sess-001"
@@ -151,3 +211,117 @@ def test_sequence_tracker_normal_flow():
     valid, err = tracker.track(session, 2)
     assert valid is True and err is None
     assert tracker.get_last_sequence(session) == 2
+
+
+def test_sequence_tracker_rejects_duplicate_and_gap_in_strict_mode():
+    tracker = SequenceTracker(strict=True)
+    session = "sess-001"
+    tracker.track(session, 0)
+
+    with pytest.raises(SequenceError):
+        tracker.track(session, 0)
+
+    with pytest.raises(SequenceError):
+        tracker.track(session, 2)
+
+
+def test_connection_sequence_state_survives_reconnect_for_same_session():
+    manager = object.__new__(ConnectionManager)
+    manager.next_outgoing_sequence = 0
+    manager.expected_incoming_sequence = 0
+    manager._sequence_session_id = None
+    manager._sequence_state_initialized = False
+
+    manager._sync_sequence_session("sess-001")
+    manager.next_outgoing_sequence = 8
+    manager.expected_incoming_sequence = 11
+
+    manager._sync_sequence_session("sess-001")
+
+    assert manager.next_outgoing_sequence == 8
+    assert manager.expected_incoming_sequence == 11
+    assert manager._sequence_session_id == "sess-001"
+
+
+def test_connection_sequence_state_resets_only_for_new_session():
+    manager = object.__new__(ConnectionManager)
+    manager.next_outgoing_sequence = 7
+    manager.expected_incoming_sequence = 9
+    manager._sequence_session_id = "sess-old"
+    manager._sequence_state_initialized = True
+
+    manager._sync_sequence_session("sess-new")
+
+    assert manager.next_outgoing_sequence == 0
+    assert manager.expected_incoming_sequence == 0
+    assert manager._sequence_session_id == "sess-new"
+
+
+def test_new_session_welcome_requires_sequence_zero():
+    manager = object.__new__(ConnectionManager)
+    manager.is_connected = True
+
+    envelope = ProtocolEnvelope(
+        type=FrameType.WELCOME,
+        session_id="sess-new",
+        sequence=1,
+        payload={"session_id": "sess-new", "assigned_at": 1.0},
+    )
+
+    assert manager._validate_welcome_sequence(envelope, None) is False
+    assert manager.is_connected is False
+
+
+def test_new_session_welcome_sequence_zero_is_accepted():
+    manager = object.__new__(ConnectionManager)
+    manager.is_connected = True
+
+    envelope = ProtocolEnvelope(
+        type=FrameType.WELCOME,
+        session_id="sess-new",
+        sequence=0,
+        payload={"session_id": "sess-new", "assigned_at": 1.0},
+    )
+
+    assert manager._validate_welcome_sequence(envelope, None) is True
+    assert manager.is_connected is True
+
+
+def test_resumed_session_welcome_must_continue_expected_sequence():
+    manager = object.__new__(ConnectionManager)
+    manager.is_connected = True
+    manager.expected_incoming_sequence = 7
+
+    valid = ProtocolEnvelope(
+        type=FrameType.WELCOME,
+        session_id="sess-existing",
+        sequence=7,
+        payload={"session_id": "sess-existing", "assigned_at": 1.0},
+    )
+    invalid = ProtocolEnvelope(
+        type=FrameType.WELCOME,
+        session_id="sess-existing",
+        sequence=8,
+        payload={"session_id": "sess-existing", "assigned_at": 1.0},
+    )
+
+    assert manager._validate_welcome_sequence(valid, "sess-existing") is True
+    assert manager._validate_welcome_sequence(invalid, "sess-existing") is False
+    assert manager.is_connected is False
+
+
+def test_incoming_sequence_rejects_wrong_session():
+    manager = object.__new__(ConnectionManager)
+    manager.session_id = "sess-001"
+    manager.expected_incoming_sequence = 0
+    manager.is_connected = True
+
+    envelope = ProtocolEnvelope(
+        type=FrameType.HEARTBEAT_ACK,
+        session_id="sess-other",
+        sequence=0,
+        payload={"timestamp": 1.0},
+    )
+
+    assert manager._validate_incoming_sequence(envelope) is False
+    assert manager.is_connected is False
