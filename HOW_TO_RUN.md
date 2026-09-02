@@ -10,7 +10,9 @@ Zephyr is deployed and running live on the cloud:
 
 | Component | Live Production URL | Purpose |
 | :--- | :--- | :--- |
-| **REST API Base** | `https://viento.onrender.com/v1` | OpenAI-compatible `/chat/completions`, `/models`, `/embeddings` |
+| **OpenAI Chat Endpoint** | `POST https://viento.onrender.com/v1/chat/completions` | Direct HTTP / cURL chat completion endpoint |
+| **SDK Base URL** | `https://viento.onrender.com/v1` | `base_url` for OpenAI Python/Node SDKs |
+| **Models Discovery** | `GET https://viento.onrender.com/v1/models` | List active models across all connected mesh nodes |
 | **Interactive Docs** | `https://viento.onrender.com/docs` | Swagger UI for exploring and testing API endpoints |
 | **Health Probe** | `https://viento.onrender.com/healthz` | Cluster status & count of connected runtime nodes |
 | **WebSocket Mesh Tunnel** | `wss://viento.onrender.com/ws/runtime` | Endpoint that local & cloud GPU worker nodes connect to |

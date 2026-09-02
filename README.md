@@ -34,7 +34,7 @@
 <summary><b>1. What is this?</b></summary>
 <br>
 
-**Zephyr** is an ultra-lightweight, high-performance distributed inference mesh that networks diverse machines—from developer laptops and homelabs to spot cloud GPUs—into a single, virtualized AI compute cluster. It exposes a unified, standard **OpenAI-compatible REST API** (`https://viento.onrender.com/v1`) backed by the **Viento** edge agent, which connects local inference engines (Ollama, vLLM, llama.cpp, PyTorch) via persistent, reverse asynchronous WebSocket tunnels.
+**Zephyr** is an ultra-lightweight, high-performance distributed inference mesh that networks diverse machines—from developer laptops and homelabs to spot cloud GPUs—into a single, virtualized AI compute cluster. It exposes a drop-in **OpenAI-compatible chat completion endpoint** (`POST https://viento.onrender.com/v1/chat/completions`) and SDK base URL (`https://viento.onrender.com/v1`) backed by the **Viento** edge agent, which connects local inference engines (Ollama, vLLM, llama.cpp, PyTorch) via persistent, reverse asynchronous WebSocket tunnels.
 </details>
 
 <details open>
@@ -84,10 +84,11 @@ viento run --server wss://viento.onrender.com/ws/runtime
 <br>
 
 Once your node connects, it registers its available models and outputs an authenticated session key. You can immediately:
-1. **Query via OpenAI Python SDK**: Point `base_url="https://viento.onrender.com/v1"` with your session key to stream chat completions in real-time.
-2. **Connect Developer Tools**: Plug `https://viento.onrender.com/v1` into **Cursor**, **Continue.dev**, **Open-WebUI**, **LangChain**, or **LlamaIndex** as a drop-in OpenAI replacement.
-3. **Scale Compute**: Boot up additional instances on free GPUs (like a Lightning AI Tesla T4 or Kaggle notebook) to automatically increase your mesh's parallel capacity.
-4. **Monitor Real-Time Hardware**: Run `viento status` to monitor live VRAM, power draw, temperatures, and throughput across your active workers.
+1. **Query via OpenAI Python SDK**: Point `base_url="https://viento.onrender.com/v1"` with your session key to stream completions from `POST /v1/chat/completions` in real-time.
+2. **Direct HTTP / cURL**: Send chat completion payloads directly to `https://viento.onrender.com/v1/chat/completions`.
+3. **Connect Developer Tools**: Plug `https://viento.onrender.com/v1` into **Cursor**, **Continue.dev**, **Open-WebUI**, **LangChain**, or **LlamaIndex** as a drop-in OpenAI replacement.
+4. **Scale Compute**: Boot up additional instances on free GPUs (like a Lightning AI Tesla T4 or Kaggle notebook) to automatically increase your mesh's parallel capacity.
+5. **Monitor Real-Time Hardware**: Run `viento status` to monitor live VRAM, power draw, temperatures, and throughput across your active workers.
 </details>
 
 ---
