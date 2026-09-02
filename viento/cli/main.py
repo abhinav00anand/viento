@@ -265,9 +265,7 @@ def status_command():
     status_color = (
         "green"
         if state.status == "running"
-        else "yellow"
-        if state.status in ("booting", "busy")
-        else "red"
+        else "yellow" if state.status in ("booting", "busy") else "red"
     )
     key_display = (
         "Available in running process (in-memory only)"
