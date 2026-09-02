@@ -65,10 +65,18 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-      - name: Publish to PyPI
+      - name: Publish with PyPI API Token (Twine)
+        if: "${{ secrets.PYPI_API_TOKEN != '' }}"
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          pip install twine
+          twine upload dist/* --skip-existing
+
+      - name: Publish with PyPI Trusted Publisher (OIDC)
+        if: "${{ secrets.PYPI_API_TOKEN == '' }}"
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
           skip-existing: true
-          # Works with PyPI Trusted Publisher (OIDC) by default; falls back to token if set
-          password: ${{ secrets.PYPI_API_TOKEN }}
