@@ -17,7 +17,7 @@
 [![Tests Passing](https://img.shields.io/badge/Tests-79%2F79%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](test_results/STRESS_TEST_REPORT.md)
 [![Hardware](https://img.shields.io/badge/GPU%20Validated-NVIDIA%20Tesla%20T4-76B900?style=for-the-badge&logo=nvidia)](assets/lightning_t4_gpu_test.png)
 [![Protocol](https://img.shields.io/badge/Protocol-Pydantic%20V2%20Canonical%201.0-orange?style=for-the-badge)](SDK/viento/protocol/envelope.py)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blueviolet?style=for-the-badge)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 <p align="center">
   <b>Viento</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e SDK/</code> • CLI: <code>viento</code>).<br>
@@ -368,5 +368,5 @@ pytest SDK/tests -v
 
 ## 📄 License
 
-Viento is licensed under the [Apache 2.0 License](LICENSE).
+Viento is licensed under the [MIT License](LICENSE).
 Built with ❤️ for decentralized, accessible, and ultra-lightweight AI computing.
