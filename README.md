@@ -1,340 +1,384 @@
+# ⚡ Zephyr Distributed Edge Inference Mesh
+
 <div align="center">
 
-```
- __      __  .___  ___________  _______  ___________  ________
-/  \    /  \ |   | \_   _____/  \      \ \__    ___/  \_____  \
-\   \/\/   / |   |  |    __)_   /   |   \  |    |      /   |   \
- \        /  |   |  |        \ /    |    \ |    |     /    |    \
-  \__/\  /   |___| /_______  / \____|__  / |____|     \_______  /
-       \/                  \/          \/                     \/
-
-         Distributed AI Inference · Edge-to-Cloud · Open Source
+```text
+  ███████╗███████╗██████╗ ██╗  ██╗██╗   ██╗██████╗ 
+  ╚══███╔╝██╔════╝██╔══██╗██║  ██║╚██╗ ██╔╝██╔══██╗
+    ███╔╝ █████╗  ██████╔╝███████║ ╚████╔╝ ██████╔╝
+   ███╔╝  ██╔══╝  ██╔═══╝ ██╔══██║  ╚██╔╝  ██╔══██╗
+  ███████╗███████╗██║     ██║  ██║   ██║   ██║  ██║
+  ╚══════╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
 ```
 
-<h1>Viento SDK</h1>
+**Zero-Trust Distributed Inference Network · Edge-to-Cloud · OpenAI-Compatible**
 
-<p>
-  <strong>Run your local LLMs. Connect to the cloud mesh. Serve the world.</strong>
-</p>
+[![PyPI version](https://img.shields.io/badge/pypi-v0.1.0-blue.svg?style=for-the-badge&logo=pypi)](https://pypi.org/project/viento/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+[![PyTorch](https://img.shields.io/badge/PyTorch-CUDA%20Accelerated-EE4C2C.svg?style=for-the-badge&logo=pytorch)](https://pytorch.org)
+[![Tests Passing](https://img.shields.io/badge/tests-71%20passed-success.svg?style=for-the-badge&logo=pytest)](Cloud/tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-[![PyPI version](https://img.shields.io/pypi/v/viento.svg?style=flat-square&color=blue&label=PyPI)](https://pypi.org/project/viento/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/viento.svg?style=flat-square)](https://pypi.org/project/viento/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-47%20passed-brightgreen?style=flat-square)](tests/)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
-[![GitHub Stars](https://img.shields.io/github/stars/abhinav00anand/zephyr?style=flat-square)](https://github.com/abhinav00anand/zephyr)
+[Architecture](#-system-architecture) • [Step-by-Step Run Guide](#-step-by-step-how-to-run--what-to-run) • [Cloud GPU (Lightning AI T4)](#-cloud-gpu-validation-lightning-ai-tesla-t4) • [CLI Reference](#-cli-command-reference) • [Protocol Specs](#-protocol--security-architecture)
 
 </div>
 
 ---
 
-## ⚡ What is Zephyr?
+## 🌐 What is Zephyr?
 
-**Zephyr** is a robust, lightweight distributed inference runtime. It lets you take your local GPU/CPU machine running [Ollama](https://ollama.ai), [llama.cpp](https://github.com/ggerganov/llama.cpp), or [vLLM](https://github.com/vllm-project/vllm) and plug it into the Zephyr Cloud mesh — instantly turning it into a globally-addressable AI inference node.
+**Zephyr** is a high-performance, zero-trust distributed inference mesh. It connects consumer edge hardware and cloud GPU instances running local inference engines ([Ollama](https://ollama.ai), [vLLM](https://github.com/vllm-project/vllm), [llama.cpp](https://github.com/ggerganov/llama.cpp), or HuggingFace) to a centralized Cloud Control Plane Gateway.
 
-Once connected, any client with a session key can hit your node through the standard **OpenAI-compatible API** (`/v1/chat/completions`, `/v1/embeddings`, `/v1/models`) — from anywhere on the internet.
+Once an edge or cloud node connects via an outbound, encrypted WebSocket (`/ws/runtime`), it is securely assigned a session-scoped API key. Any standard OpenAI client, library, or frontend app can query your private GPU nodes over HTTPS from anywhere in the world—**without port forwarding, static IPs, or exposing your local network**.
 
-```
-Your Machine (GPU/CPU)          Zephyr Cloud Gateway          Your Users
-────────────────────           ────────────────────          ────────────
- Ollama llama3:latest   ◄─WSS─►  zephyr-i2ho.onrender.com  ◄─HTTPS─►  API Clients
- llama.cpp phi3          secure    job routing &          OpenAI-compatible
- vLLM mistral           tunnel    load balancing          SDK / curl / apps
+---
+
+## 🏗 System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Clients["Users & Applications"]
+        C1["OpenAI SDK / Python"]
+        C2["cURL / HTTP Clients"]
+        C3["Web UIs & Chatbots"]
+    end
+
+    subgraph CloudGW["Zephyr Cloud Control Plane (FastAPI / Uvicorn)"]
+        REST["REST API Layer<br/>POST /v1/chat/completions<br/>POST /v1/embeddings<br/>GET /v1/models"]
+        AUTH["Zero-Trust Scoped KeyStore<br/>(SHA-256 Hashed · 1-Hour TTL)"]
+        DISP["Atomic Multi-Tier Dispatcher<br/>(Concurrency Guard & Backpressure)"]
+        WSS_GW["Outbound WebSocket Gateway<br/>/ws/runtime"]
+    end
+
+    subgraph Workers["Edge & Cloud GPU Runtime Nodes (Viento SDK)"]
+        direction TB
+        subgraph Node1["Local Edge Rig"]
+            N1["Viento Runtime Worker"]
+            OL["Ollama Engine<br/>(llama3:8b, mistral:7b)"]
+        end
+        subgraph Node2["Cloud GPU Worker (e.g. Lightning AI T4)"]
+            N2["Viento Runtime Worker"]
+            T4["Tesla T4 GPU (16GB VRAM)<br/>(Qwen2.5-0.5B, vLLM)"]
+        end
+    end
+
+    C1 & C2 & C3 -->|"HTTPS Requests with zph_tmp_..."| REST
+    REST --> AUTH
+    AUTH --> DISP
+    DISP <==>|"Pydantic V2 Envelope Protocol (WSS)"| WSS_GW
+    WSS_GW <===>|"Secure Bidirectional Tunnel"| N1
+    WSS_GW <===>|"Secure Bidirectional Tunnel"| N2
+    N1 --> OL
+    N2 --> T4
 ```
 
 ---
 
-## 🚀 Installation
+## 🚀 Step-by-Step: How to Run & What to Run
 
-```bash
-pip install viento
+Follow this clear, step-by-step guide to run the entire Zephyr mesh locally or across cloud instances.
+
+```
+┌───────────────────────────────────────────────────────────────────────────┐
+│                           EXECUTION ROADMAP                               │
+│                                                                           │
+│  [Step 1] Clone Repo & Prepare Virtual Environment                        │
+│      ↓                                                                    │
+│  [Step 2] Start Cloud Control Plane Server (Port 10000)                   │
+│      ↓                                                                    │
+│  [Step 3] Boot Inference Engine (Ollama / HuggingFace / vLLM)             │
+│      ↓                                                                    │
+│  [Step 4] Run Edge Runtime Worker (`viento run`)                          │
+│      ↓                                                                    │
+│  [Step 5] Send Inference Requests via OpenAI-Compatible API              │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
-Or install from source for the latest unreleased features:
+---
+
+### Step 1: Clone Repository & Create Virtual Environment
+
+Open your terminal and clone the repository:
 
 ```bash
 git clone https://github.com/abhinav00anand/zephyr.git
-cd viento/SDK
-pip install -e ".[dev]"
-```
+cd zephyr
 
-**Requirements:** Python ≥ 3.9 · [Ollama](https://ollama.ai) (recommended) or llama.cpp / vLLM
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Linux / macOS:
+source venv/bin/activate
+# On Windows (PowerShell):
+.\venv\Scripts\Activate.ps1
+```
 
 ---
 
-## 🖥 CLI Reference
+### Step 2: Start the Cloud Control Plane
 
-### Start Your Node
+The Cloud Control Plane orchestrates active runtime sessions, mints temporary keys, and routes incoming REST requests to connected nodes.
 
 ```bash
-viento run
+cd Cloud
+pip install -r requirements.txt
+
+# Set deployment configuration
+export ZEPHYR_ENV=development
+export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+export ZEPHYR_PORT=10000
+
+# On Windows PowerShell:
+# $env:ZEPHYR_ENV="development"
+# $env:ZEPHYR_BOOTSTRAP_KEY="zephyr_dev_secret_key_2026"
+# $env:ZEPHYR_PORT="10000"
+
+# Launch server with single-worker in-memory state
+uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload
 ```
 
-Boots the runtime, connects to `wss://viento.onrender.com/ws/runtime`, performs the HELLO→WELCOME→REGISTER→SESSION_READY handshake, and begins receiving jobs. On success, your terminal displays:
-
+#### What You Will See:
+```text
+INFO:     Started server process [14820]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:10000 (Press CTRL+C to quit)
 ```
+
+> **Interactive Documentation**:
+> - Swagger UI: `http://localhost:10000/docs`
+> - Health Check: `http://localhost:10000/healthz`
+
+---
+
+### Step 3: Start Your Inference Backend
+
+Zephyr supports **Ollama**, **vLLM**, **llama.cpp**, or native Python HuggingFace models.
+
+#### Option A: Ollama (Recommended for Local PCs & Desktops)
+Download and install [Ollama](https://ollama.ai), then start the daemon and pull a model:
+```bash
+# In a new terminal:
+ollama serve
+
+# Pull desired model weights
+ollama pull llama3:latest
+# or
+ollama pull phi3:mini
+```
+
+#### Option B: HuggingFace / Transformers / GPU
+If running on a cloud GPU (e.g. T4 / A100), you can run models directly with PyTorch or vLLM:
+```bash
+pip install transformers accelerate torch
+```
+
+---
+
+### Step 4: Boot the Edge Runtime Node (`viento run`)
+
+The `viento` SDK automatically discovers your local models, GPU/CPU telemetry, and establishes a secure tunnel with the Cloud Gateway.
+
+In a new terminal window:
+```bash
+# Install the Viento SDK
+pip install -e SDK/
+
+# Set the bootstrap secret matching the cloud server
+export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+
+# Connect to the local Cloud Server
+viento run --server ws://localhost:10000/ws/runtime
+
+# (Or connect to the production cloud gateway)
+# viento run --server wss://viento.onrender.com/ws/runtime
+```
+
+#### Expected Terminal Output:
+```text
 ╔══════════════════════════════════════════════════════════════╗
 ║               ⚡  ZEPHYR NODE AUTHENTICATED  ⚡              ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Session ID  : zph_sess_8f9a12c4                            ║
-║  API Key     : zph_tmp_8f9a2b4c...  (1-hour TTL)           ║
-║  Models      : llama3:latest, phi3:mini, mistral:7b         ║
+║  Session ID  : zph_sess_7a3d12c8                            ║
+║  API Key     : zph_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
+║  Models      : llama3:latest, phi3:mini                     ║
 ║  Backend     : Ollama @ http://localhost:11434               ║
-║  Status      : 🟢 Online — awaiting jobs                    ║
+║  Capacity    : Max 2 concurrent jobs                         ║
+║  Status      : 🟢 Online — awaiting mesh jobs               ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-### All Commands
-
-| Command | Description |
-|---------|-------------|
-| `viento run` | Start the runtime node and connect to cloud |
-| `viento run --server wss://...` | Connect to a custom gateway |
-| `viento run --concurrency 4` | Override max concurrent jobs |
-| `viento status` | Show session, TTL, active jobs, and metrics |
-| `viento models` | List all locally discovered models |
-| `viento pull llama3:latest` | Pull model weights via Ollama |
-| `viento doctor` | Diagnose Ollama, GPU, RAM, and network |
-| `viento config view` | View current configuration |
-| `viento config set <key> <value>` | Update a config value |
-| `viento stop` | Gracefully drain jobs and disconnect |
+> 🔑 **Copy the temporary API key (`zph_tmp_...`)** printed in the box! This key gives instant access to your connected node through the cloud REST API.
 
 ---
 
-## 🐍 Python Client Usage
+### Step 5: Send Inference Requests (OpenAI-Compatible API)
 
-### Synchronous Chat
+You can now hit the cloud gateway using standard `curl` or any OpenAI SDK client.
 
+#### Using cURL (Streaming):
+```bash
+curl -N http://localhost:10000/v1/chat/completions \
+  -H "Authorization: Bearer zph_tmp_YOUR_SESSION_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3:latest",
+    "messages": [
+      {"role": "system", "content": "You are a distributed inference assistant."},
+      {"role": "user", "content": "Explain quantum computing in two sentences."}
+    ],
+    "stream": true,
+    "temperature": 0.7
+  }'
+```
+
+#### Using Python OpenAI SDK:
 ```python
-from viento.client.client import VientoClient
+from openai import OpenAI
 
-client = VientoClient(
-    base_url="https://viento.onrender.com",
-    api_key="zph_tmp_your_session_key",
+client = OpenAI(
+    base_url="http://localhost:10000/v1",
+    api_key="zph_tmp_YOUR_SESSION_KEY"
 )
 
 response = client.chat.completions.create(
     model="llama3:latest",
     messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user",   "content": "Explain quantum entanglement."},
+        {"role": "user", "content": "Write a haiku about distributed AI."}
     ],
-    temperature=0.7,
-    max_tokens=512,
+    stream=True
 )
 
-print(response.choices[0].message.content)
-```
-
-### Streaming (Real-Time Tokens)
-
-```python
-stream = client.chat.completions.create(
-    model="llama3:latest",
-    messages=[{"role": "user", "content": "Write a haiku about distributed systems."}],
-    stream=True,
-)
-
-for chunk in stream:
-    print(chunk.choices[0].delta.content, end="", flush=True)
-```
-
-### Async Client
-
-```python
-import asyncio
-from viento.client.client import AsyncVientoClient
-
-async def main():
-    client = AsyncVientoClient(api_key="zph_tmp_...")
-    response = await client.chat.completions.create(
-        model="phi3:latest",
-        messages=[{"role": "user", "content": "Hello, Zephyr!"}],
-    )
-    print(response.choices[0].message.content)
-
-asyncio.run(main())
-```
-
-### Embeddings
-
-```python
-result = client.embeddings.create(
-    model="all-minilm:latest",
-    input=["The quick brown fox", "jumps over the lazy dog"],
-)
-
-for i, embedding in enumerate(result.data):
-    print(f"Input {i}: {len(embedding.embedding)}-dim vector")
+for chunk in response:
+    content = chunk.choices[0].delta.content
+    if content:
+        print(content, end="", flush=True)
+print()
 ```
 
 ---
 
-## 🏗 Architecture
+## ⚡ Cloud GPU Validation: Lightning AI Tesla T4
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │           Zephyr Cloud Gateway          │
-                    │     wss://zephyr-i2ho.onrender.com           │
-                    │                                         │
-                    │  ┌──────────┐  ┌──────────────────────┐ │
-                    │  │  API GW  │  │  RuntimeManager      │ │
-                    │  │ /v1/chat │  │  - Session Registry  │ │
-                    │  │ /v1/emb  │  │  - Job Routing       │ │
-                    │  │ /v1/models│ │  - Heartbeat Monitor │ │
-                    │  └──────────┘  └──────────────────────┘ │
-                    └──────────────────┬──────────────────────┘
-                                       │
-                               WSS · ProtocolEnvelope v1.0
-                               (HELLO/WELCOME/REGISTER/JOB/...)
-                                       │
-         ┌─────────────────────────────▼───────────────────────────────┐
-         │                     Zephyr Edge Node                        │
-         │                                                             │
-         │   ┌─────────────────────┐     ┌───────────────────────────┐ │
-         │   │  ConnectionManager  │────►│       JobScheduler        │ │
-         │   │  ▸ WSS Client       │     │  ▸ FIFO async queue       │ │
-         │   │  ▸ Exponential BO   │     │  ▸ Semaphore concurrency  │ │
-         │   │  ▸ Heartbeat 15s    │     │  ▸ ExecutionHandle cancel │ │
-         │   │  ▸ Seq. Validation  │     │  ▸ State machine (6 states│ │
-         │   └──────────┬──────────┘     └────────────┬──────────────┘ │
-         │              │                             │                 │
-         │   ┌──────────▼──────────┐    ┌────────────▼──────────────┐  │
-         │   │   ConfigManager     │    │    Inference Backends      │  │
-         │   │  ~/.viento/         │    │  ▸ OllamaAdapter          │  │
-         │   │    config.toml      │    │  ▸ LlamaCppAdapter        │  │
-         │   │    runtime.json     │    │  ▸ VLLMAdapter            │  │
-         │   └─────────────────────┘    └───────────────────────────┘  │
-         │                                                             │
-         │   ┌──────────────────────────────────────────────────────┐  │
-         │   │                  TelemetryCollector                  │  │
-         │   │   CPU · RAM · GPU VRAM · Latency Histograms · Logs   │  │
-         │   └──────────────────────────────────────────────────────┘  │
-         └─────────────────────────────────────────────────────────────┘
-```
+Zephyr has been tested and verified on a live **Lightning AI Studio** powered by an **NVIDIA Tesla T4 GPU (16 GB GDDR6 VRAM)**.
 
-### Core Components
-
-| Component | Location | Role |
-|-----------|----------|------|
-| `ConnectionManager` | `viento/connection/manager.py` | WSS supervisor, handshake, heartbeat, reconnect |
-| `JobScheduler` | `viento/scheduler/scheduler.py` | FIFO queue, semaphore, cancellation state machine |
-| `OllamaAdapter` | `viento/backends/ollama.py` | NDJSON streaming, TCP-abort cancellation |
-| `LlamaCppAdapter` | `viento/backends/llamacpp.py` | llama.cpp server v1/chat/completions |
-| `VLLMAdapter` | `viento/backends/vllm.py` | vLLM OpenAI-compat endpoint |
-| `ProtocolEnvelope` | `viento/protocol/envelope.py` | Canonical WSS framing (v1.0) |
-| `TelemetryCollector` | `viento/telemetry/collector.py` | Hardware stats + latency histograms |
-| `ConfigManager` | `viento/config/loader.py` | Persistent config, secure key stripping |
-| `VientoClient` | `viento/client/client.py` | OpenAI-compatible Python client |
-
----
-
-## 📁 Repository Structure
-
-```
-SDK/
-├── 📄 pyproject.toml          ← Package metadata & tooling
-├── 📄 README.md               ← This file
-├── 📄 CHANGELOG.md            ← Release history
-├── 📄 CONTRIBUTING.md         ← Contribution guide
-├── 📄 CODE_OF_CONDUCT.md      ← Community standards
-│
-├── 📂 viento/             ← Main package source
-│   ├── 📄 __init__.py
-│   ├── 📂 backends/           ← Inference engine adapters
-│   │   ├── 📄 base.py         ← Abstract base + handles
-│   │   ├── 📄 ollama.py       ← Ollama REST adapter
-│   │   ├── 📄 llamacpp.py     ← llama.cpp adapter
-│   │   └── 📄 vllm.py         ← vLLM adapter
-│   ├── 📂 cli/                ← CLI commands
-│   │   ├── 📄 main.py         ← Click group entry point
-│   │   └── 📄 commands.py     ← run, status, models, pull ...
-│   ├── 📂 client/             ← Python SDK client
-│   │   └── 📄 client.py       ← VientoClient / AsyncVientoClient
-│   ├── 📂 config/             ← Config & state management
-│   │   └── 📄 loader.py       ← ConfigManager, RuntimeState
-│   ├── 📂 connection/         ← WebSocket supervisor
-│   │   └── 📄 manager.py      ← ConnectionManager
-│   ├── 📂 protocol/           ← Wire protocol engine
-│   │   ├── 📄 envelope.py     ← Pydantic envelope models
-│   │   └── 📄 validator.py    ← Sequence tracking & validation
-│   ├── 📂 scheduler/          ← Job queue and executor
-│   │   └── 📄 scheduler.py    ← JobScheduler (6-state machine)
-│   └── 📂 telemetry/          ← Observability layer
-│       ├── 📄 collector.py    ← Hardware + latency metrics
-│       └── 📄 logging.py      ← JSON logger with secret masking
-│
-├── 📂 tests/                  ← Test suite (47 tests, 100% pass)
-│   ├── 📄 test_backends.py
-│   ├── 📄 test_ollama_adapter.py
-│   ├── 📄 test_protocol.py
-│   ├── 📄 test_sdk.py
-│   └── 📄 test_telemetry.py
-│
-└── 📂 docs/                   ← Extended documentation
-    ├── 📄 architecture.md
-    ├── 📄 cli_guide.md
-    └── 📄 ollama_integration_guide.md
-```
-
----
-
-## 🔐 Security Design
-
-- **No secrets on disk:** Active API keys (`zph_tmp_...`) are kept only in process memory. The `RuntimeState` model strips keys before any disk write.
-- **TLS by default:** All cloud connections use `wss://` (WebSocket Secure).
-- **Secret masking in logs:** The `SecretMasker` regex masks any `zph_tmp_...` pattern in structured logs.
-- **Sequence validation:** The `SequenceTracker` detects replay attacks and packet reordering in both directions.
-- **Connection isolation:** Each WSS session uses a unique `session_id`; unauthorized frame injection is rejected at the envelope level.
-
----
-
-## 🧪 Testing
-
-```bash
-# Install dev dependencies
-pip install -e ".[dev]"
-
-# Run full test suite
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=viento --cov-report=html
-```
-
-**Test Coverage Summary:**
-
-| Module | Tests |
-|--------|-------|
-| Backend Adapters (Ollama, llama.cpp, vLLM) | 14 tests |
-| Protocol Envelopes & Sequence Tracking | 16 tests |
-| Scheduler, Config, Connection, Client | 9 tests |
-| Telemetry & Logging | 8 tests |
-| **Total** | **47 tests · 100% passing** |
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/amazing-feature`
-3. Run the tests: `pytest tests/`
-4. Push and open a Pull Request
-
----
-
-## 📜 License
-
-MIT License © 2026 Zephyr Cloud Team. See [LICENSE](../LICENSE) for details.
-
----
+### Visual Validation & Telemetry
 
 <div align="center">
 
-Made with ⚡ by the Zephyr Cloud team.
+![Zephyr Lightning AI T4 Live Execution](assets/lightning_t4_execution.gif)
 
-[⭐ Star us on GitHub](https://github.com/abhinav00anand/zephyr) · [📦 PyPI Package](https://pypi.org/project/viento/) · [🐛 Report a Bug](https://github.com/abhinav00anand/zephyr/issues)
+<br/>
+
+![Zephyr Lightning AI T4 GPU Benchmark](assets/lightning_t4_gpu_test.png)
 
 </div>
+
+### Hardware & Benchmark Results
+
+| Metric | Measured Value | Details / Benchmark Spec |
+| :--- | :--- | :--- |
+| **Cloud GPU** | **NVIDIA Tesla T4** | 16GB GDDR6 · Compute Capability 7.5 |
+| **CUDA Environment** | **CUDA 12.8 / 13.0** | NVIDIA-SMI Driver 580.173.02 · PyTorch 2.8.0+cu128 |
+| **FP16 Tensor Cores** | **24.19 TFLOPS** | 5.68 ms/iter (4096 × 4096 FP16 GEMM) |
+| **Model Ingested** | `Qwen/Qwen2.5-0.5B` | Loaded to `cuda:0` in 1.67 seconds |
+| **VRAM Footprint** | **1,047.9 MB** | Only 7% of available 16GB VRAM utilized |
+| **Inference Speed** | **28.05 tokens/sec** | Real-time chat completion on Tesla T4 |
+| **SDK Test Suite** | **71 / 71 PASSED** | 100% test pass rate in 4.11 seconds |
+
+### Running Zephyr on Lightning AI Cloud GPU
+
+You can run your own cloud node on Lightning AI programmatically using `lightning-sdk`:
+
+```python
+from lightning_sdk.lightning_cloud.login import Auth
+from lightning_sdk import Studio, Machine
+
+# 1. Authenticate with your Lightning AI API Key
+auth = Auth()
+auth.save(user_id="YOUR_USER_ID", auth_token="sk-lit-YOUR_KEY")
+
+# 2. Initialize and start Studio on Tesla T4 GPU
+studio = Studio(
+    name="zephyr-t4-node",
+    teamspace="YOUR_TEAMSPACE",
+    user="YOUR_USERNAME",
+    create_ok=True
+)
+studio.start(machine=Machine.T4)
+
+# 3. Clone and execute tests inside the T4 GPU environment
+print(studio.run("nvidia-smi"))
+print(studio.run("""
+git clone https://github.com/abhinav00anand/zephyr.git
+cd zephyr
+pip install -q -e . pytest
+pytest tests/ -v
+"""))
+
+# 4. Stop Studio when done to conserve credits
+studio.stop()
+```
+
+---
+
+## 🛠 CLI Command Reference (`viento`)
+
+| Command | Description | Example |
+| :--- | :--- | :--- |
+| `viento run` | Starts the worker node and attaches to mesh | `viento run --server wss://viento.onrender.com/ws/runtime` |
+| `viento run --concurrency <N>` | Sets maximum parallel inference slots | `viento run --concurrency 4` |
+| `viento models` | Lists all models discovered on local backends | `viento models` |
+| `viento pull <model>` | Pulls weights via Ollama adapter | `viento pull llama3:latest` |
+| `viento doctor` | Comprehensive diagnostic check (GPU, RAM, ports) | `viento doctor` |
+| `viento status` | Displays active session ID, key TTL, and metrics | `viento status` |
+| `viento config view` | Shows current configuration parameters | `viento config view` |
+| `viento config set <k> <v>` | Updates a configuration property | `viento config set server.port 10000` |
+| `viento stop` | Gracefully drains running jobs and disconnects | `viento stop` |
+
+---
+
+## 🛡 Protocol & Security Architecture
+
+1. **Strict Canonical Envelope Protocol (V1.0)**:
+   - Every WebSocket frame adheres to strict Pydantic V2 schema validation (`extra="forbid"`).
+   - Directional monotonic sequence numbers prevent replay attacks and detect dropped frames.
+2. **Zero-Trust Scoped Keys**:
+   - WebSocket handshakes enforce `ZEPHYR_BOOTSTRAP_KEY` validation during `HELLO`.
+   - Node registration automatically mints a temporary 1-hour token (`zph_tmp_<48 hex chars>`) SHA-256 hashed at rest.
+   - Disconnecting or terminating the WebSocket immediately revokes the associated token.
+3. **Atomic Multi-Tier Capacity Control**:
+   - Strict hierarchical checks: `Session Alive` → `Model Ready` → `Model Concurrency Limit` → `Session Concurrency Limit` → `Queue Depth`.
+   - Atomic terminalization guard (`_terminal_jobs`) guarantees job counters decrement **EXACTLY ONCE**.
+4. **Immediate TCP Socket Stream Cancellation**:
+   - Cancelling an active inference stream triggers `ExecutionHandle.cancel()`, closing the backend socket instantly without leaving orphan generation threads consuming GPU compute.
+5. **Zero Token Drop Backpressure**:
+   - Async queue streams enforce timeout-bounded backpressure (`asyncio.wait_for(queue.put(), timeout=5.0)`). Tokens are never silently lost.
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the test suite locally or in CI:
+
+```bash
+# 1. Run Cloud Server test suite
+pytest Cloud/tests/ -v
+
+# 2. Run SDK test suite
+pytest SDK/tests/ -v
+
+# 3. Run full protocol schema verification
+python scripts/generate_protocol_schema.py
+
+# 4. Run security threat model auditor
+python Private/research/threat_model.py
+```
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for details.

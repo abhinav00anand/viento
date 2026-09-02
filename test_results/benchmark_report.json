@@ -1,0 +1,80 @@
+{
+  "timestamp": "2026-09-02 15:05:57 UTC",
+  "suite": "Zephyr Concurrency Stress & Zero-Token-Drop Validation",
+  "total_tests_executed": 59,
+  "tests_passed": 59,
+  "tests_failed": 0,
+  "pass_rate_pct": 100.0,
+  "benchmarks": [
+    {
+      "concurrency": 1,
+      "requests": 5,
+      "total_tokens": 60,
+      "duration_sec": 0.13,
+      "throughput_tok_per_sec": 461.54,
+      "avg_latency_ms": 26.0,
+      "p50_latency_ms": 23.92,
+      "p95_latency_ms": 35.1,
+      "p99_latency_ms": 46.28,
+      "dropped_tokens": 0,
+      "queue_drop_rate_pct": 0.0,
+      "status": "PASSED"
+    },
+    {
+      "concurrency": 2,
+      "requests": 10,
+      "total_tokens": 120,
+      "duration_sec": 0.1341,
+      "throughput_tok_per_sec": 894.57,
+      "avg_latency_ms": 13.41,
+      "p50_latency_ms": 12.34,
+      "p95_latency_ms": 18.11,
+      "p99_latency_ms": 23.88,
+      "dropped_tokens": 0,
+      "queue_drop_rate_pct": 0.0,
+      "status": "PASSED"
+    },
+    {
+      "concurrency": 4,
+      "requests": 20,
+      "total_tokens": 240,
+      "duration_sec": 0.14,
+      "throughput_tok_per_sec": 1714.29,
+      "avg_latency_ms": 7.0,
+      "p50_latency_ms": 6.44,
+      "p95_latency_ms": 9.45,
+      "p99_latency_ms": 12.46,
+      "dropped_tokens": 0,
+      "queue_drop_rate_pct": 0.0,
+      "status": "PASSED"
+    },
+    {
+      "concurrency": 8,
+      "requests": 40,
+      "total_tokens": 480,
+      "duration_sec": 0.1483,
+      "throughput_tok_per_sec": 3237.03,
+      "avg_latency_ms": 3.71,
+      "p50_latency_ms": 3.41,
+      "p95_latency_ms": 5.0,
+      "p99_latency_ms": 6.6,
+      "dropped_tokens": 0,
+      "queue_drop_rate_pct": 0.0,
+      "status": "PASSED"
+    },
+    {
+      "concurrency": 16,
+      "requests": 80,
+      "total_tokens": 960,
+      "duration_sec": 0.16,
+      "throughput_tok_per_sec": 6000.0,
+      "avg_latency_ms": 2.0,
+      "p50_latency_ms": 1.84,
+      "p95_latency_ms": 2.7,
+      "p99_latency_ms": 3.56,
+      "dropped_tokens": 0,
+      "queue_drop_rate_pct": 0.0,
+      "status": "PASSED"
+    }
+  ]
+}
