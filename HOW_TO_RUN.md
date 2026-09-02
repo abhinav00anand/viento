@@ -263,9 +263,15 @@ python scripts/run_stress_benchmark_suite.py
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
 | `viento run` | `--server <url>` | Connects node to WebSocket gateway and listens for jobs |
-| `viento run` | `--backend <ollama\|vllm>` | Specifies inference backend (default: `ollama`) |
-| `viento run` | `--concurrency <N>` | Maximum parallel generation jobs (default: 2) |
+| `viento run` | `-b, --backend <ollama\|vllm\|llamacpp>` | Specifies inference backend (default: `ollama`) |
+| `viento run` | `--ollama-url <url>` | Custom Ollama endpoint URL (default: `http://localhost:11434`) |
+| `viento run` | `--vllm-url <url>` | Custom vLLM endpoint URL (default: `http://localhost:8000/v1`) |
+| `viento run` | `--llamacpp-url <url>` | Custom llama.cpp endpoint URL (default: `http://localhost:8080`) |
+| `viento run` | `-c, --concurrency <N>` | Maximum parallel generation jobs (default: 2) |
+| `viento run` | `-k, --bootstrap-key <key>` | Node bootstrap authentication key |
+| `viento run` | `--name <name>` | Custom node identifier |
+| `viento stop` | `[--force]` | Drains jobs, terminates running node process, and resets status |
 | `viento doctor` | None | Validates backend reachability and model availability |
 | `viento models` | None | Discovers and prints all locally loaded models |
 | `viento status` | None | Displays CPU, RAM, and GPU telemetry |
-| `viento config` | `--set key=val` | Modifies persistent configuration |
+| `viento config` | `get/set/list` | Inspects or modifies persistent configuration |

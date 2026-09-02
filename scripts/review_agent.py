@@ -12,11 +12,8 @@ directly to GitHub Pull Requests.
 import argparse
 import asyncio
 import os
-import re
 import subprocess
 import sys
-from typing import Optional, Dict, Any
-
 
 VIENTO_REVIEW_INSTRUCTIONS = """
 You are Antigravity, an expert software engineering and architectural review agent
@@ -133,7 +130,9 @@ async def fetch_pr_diff_from_github(repo: str, pr_number: str, token: str) -> st
         return response.text
 
 
-async def post_review_to_github(repo: str, pr_number: str, token: str, review_body: str, event: str = "COMMENT") -> None:
+async def post_review_to_github(
+    repo: str, pr_number: str, token: str, review_body: str, event: str = "COMMENT"
+) -> None:
     """Post review comment directly to the GitHub Pull Request."""
     import httpx
 
@@ -163,7 +162,9 @@ async def post_review_to_github(repo: str, pr_number: str, token: str, review_bo
             print(f"Warning: Failed to post to GitHub ({response.status_code}): {response.text}")
 
 
-async def run_antigravity_agent(prompt: str, system_instructions: str, model: str = "gemini-2.5-flash") -> str:
+async def run_antigravity_agent(
+    prompt: str, system_instructions: str, model: str = "gemini-2.5-flash"
+) -> str:
     """Execute review using direct API or Google Antigravity SDK with timeout failover."""
     api_key = os.environ.get("ANTIGRAVITY_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -179,6 +180,7 @@ async def run_antigravity_agent(prompt: str, system_instructions: str, model: st
 
     try:
         from google.antigravity import Agent, LocalAgentConfig
+
         print("Using Google Antigravity SDK runtime...")
         config = LocalAgentConfig(
             api_key=api_key,
@@ -200,11 +202,15 @@ async def run_antigravity_agent(prompt: str, system_instructions: str, model: st
         # 25-second watchdog for local harness
         return await asyncio.wait_for(_call_agent(), timeout=25.0)
     except Exception as e:
-        print(f"Notice: Antigravity SDK harness encountered ({e}). Transitioning to direct API with multi-model failover...")
+        print(
+            f"Notice: Antigravity SDK harness encountered ({e}). Transitioning to direct API with multi-model failover..."
+        )
         return await run_gemini_fallback(prompt, system_instructions, api_key, model)
 
 
-async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: str, initial_model: str) -> str:
+async def run_gemini_fallback(
+    prompt: str, system_instructions: str, api_key: str, initial_model: str
+) -> str:
     """Fallback using httpx to call Gemini API directly with retry and model fallback."""
     import httpx
 
@@ -231,7 +237,9 @@ async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: st
                 async with httpx.AsyncClient(timeout=180.0) as client:
                     response = await client.post(url, json=payload)
                     if response.status_code in (429, 503):
-                        print(f"Model '{model}' returned HTTP {response.status_code} (capacity limit). Backing off {attempt * 2}s...")
+                        print(
+                            f"Model '{model}' returned HTTP {response.status_code} (capacity limit). Backing off {attempt * 2}s..."
+                        )
                         await asyncio.sleep(attempt * 2)
                         continue
                     response.raise_for_status()
@@ -248,22 +256,45 @@ async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: st
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Antigravity PR Review & Deep Check for Viento SDK")
-    parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""), help="GitHub repo (owner/repo)")
-    parser.add_argument("--pr", default=os.environ.get("GITHUB_PR_NUMBER") or os.environ.get("PULL_REQUEST_NUMBER", ""), help="Pull Request number")
+    parser = argparse.ArgumentParser(
+        description="Antigravity PR Review & Deep Check for Viento SDK"
+    )
+    parser.add_argument(
+        "--repo", default=os.environ.get("GITHUB_REPOSITORY", ""), help="GitHub repo (owner/repo)"
+    )
+    parser.add_argument(
+        "--pr",
+        default=os.environ.get("GITHUB_PR_NUMBER") or os.environ.get("PULL_REQUEST_NUMBER", ""),
+        help="Pull Request number",
+    )
     parser.add_argument("--base", default="main", help="Base branch (default: main)")
     parser.add_argument("--head", default="HEAD", help="Head commit or branch (default: HEAD)")
     parser.add_argument("--diff-file", help="Path to pre-extracted diff file instead of git")
-    parser.add_argument("--deep", action="store_true", help="Execute deep architectural & safety audit")
-    parser.add_argument("--score", action="store_true", default=True, help="Include detailed 0-100 Code Quality & Architectural Readiness Score")
-    parser.add_argument("--model", default="gemini-2.5-flash", help="Model identifier (default: gemini-2.5-flash)")
+    parser.add_argument(
+        "--deep", action="store_true", help="Execute deep architectural & safety audit"
+    )
+    parser.add_argument(
+        "--score",
+        action="store_true",
+        default=True,
+        help="Include detailed 0-100 Code Quality & Architectural Readiness Score",
+    )
+    parser.add_argument(
+        "--model", default="gemini-2.5-flash", help="Model identifier (default: gemini-2.5-flash)"
+    )
     parser.add_argument("--output", help="Path to write markdown output report")
-    parser.add_argument("--post-comment", action="store_true", help="Post review comment directly to GitHub PR")
-    parser.add_argument("--additional-context", default="", help="Custom instructions or review focus")
+    parser.add_argument(
+        "--post-comment", action="store_true", help="Post review comment directly to GitHub PR"
+    )
+    parser.add_argument(
+        "--additional-context", default="", help="Custom instructions or review focus"
+    )
 
     args = parser.parse_args()
 
-    github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN", "")
+    github_token = os.environ.get("GITHUB_TOKEN") or os.environ.get(
+        "GITHUB_PERSONAL_ACCESS_TOKEN", ""
+    )
 
     # Obtain diff: either from GitHub API, file, or git
     diff_text = ""
@@ -312,7 +343,9 @@ async def main() -> None:
     # Post comment to GitHub PR if requested
     if args.post_comment and args.repo and args.pr:
         if not github_token:
-            print("Warning: Cannot post review to GitHub: GITHUB_TOKEN environment variable is missing.")
+            print(
+                "Warning: Cannot post review to GitHub: GITHUB_TOKEN environment variable is missing."
+            )
         else:
             print(f"\nPosting review comment to GitHub PR #{args.pr}...")
             # Detect verdict from review text
@@ -322,7 +355,9 @@ async def main() -> None:
             elif "APPROVE" in review_result and "🚨 FAIL" not in review_result:
                 event = "APPROVE"
 
-            await post_review_to_github(args.repo, args.pr, github_token, review_result, event=event)
+            await post_review_to_github(
+                args.repo, args.pr, github_token, review_result, event=event
+            )
 
 
 if __name__ == "__main__":

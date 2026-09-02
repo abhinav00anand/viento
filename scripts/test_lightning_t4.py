@@ -1,19 +1,20 @@
 import os
-import sys
-import time
+
+from lightning_sdk import Machine, Studio
 from lightning_sdk.lightning_cloud.login import Auth
-from lightning_sdk import Studio, Machine, User, Teamspace
 
 print("==> Configuring Lightning AI credentials...")
+user_id = os.getenv("LIGHTNING_USER_ID", "<your-lightning-user-id>")
+auth_token = os.getenv("LIGHTNING_AUTH_TOKEN", "<your-lightning-auth-token>")
 auth = Auth()
-auth.save(user_id="a3220a59-f43e-4d4d-843d-08b38bb8bbea", auth_token="sk-lit-698f2cfc-3fe8-433d-98da-b03aa08d5037")
+auth.save(user_id=user_id, auth_token=auth_token)
 
 print("==> Initializing Studio on teamspace 'financial-llm-training-project'...")
 studio = Studio(
     name="viento-t4-node",
     teamspace="financial-llm-training-project",
     user="abhinav337463",
-    create_ok=True
+    create_ok=True,
 )
 
 print(f"Studio instance initialized: {studio.name}")

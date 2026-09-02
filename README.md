@@ -219,7 +219,7 @@ sequenceDiagram
 Each Viento node protects itself from resource exhaustion using an internal multi-stage queue and semaphore supervisor:
 - **`asyncio.Semaphore(max_concurrency)`**: Limits the number of parallel inference requests touching local GPU/CPU compute simultaneously.
 - **Bounded FIFO Queue (`max_queue_depth=50`)**: When incoming traffic surges beyond maximum queue depth, Viento immediately rejects excess jobs with `JOB_ERROR (queue_full)`, signaling the Cloud Gateway to shed load or route to an alternate worker.
-- **Instant Cancellation (`ExecutionHandle.cancel()`)**: If a client cancels their request or closes their browser, the Gateway sends a `CANCEL_JOB` frame. Viento immediately closes the HTTP connection to Ollama/vLLM, terminating compute generation within **< 2 milliseconds**.
+- **Instant Cancellation (`ExecutionHandle.cancel()`)**: If a client cancels their request or closes their browser, the Gateway sends a `CANCEL_JOB` frame. Viento immediately closes the HTTP connection to Ollama/vLLM, terminating compute generation with observed sub-2ms local teardown in benchmark cancellation tests.
 
 ---
 
@@ -245,7 +245,7 @@ To prove Viento's cross-environment capability, the full system was launched and
 - **Cold Boot Time**: Model weight loading into VRAM in **1.67 seconds**.
 - **VRAM Footprint**: Only **1,047.9 MB VRAM** utilized.
 - **Generation Speed**: **28.05 tokens/second** generation throughput.
-- **Test Suite Execution**: **71 of 71 unit tests passed** in **4.11 seconds** directly on the cloud GPU node.
+- **Test Suite Execution**: **Historical Lightning AI T4 validation**: 71 of 71 unit tests passed in **4.11 seconds** directly on the cloud GPU node (prior to the v0.4.0 test suite expansion to 82 tests).
 
 <div align="center">
 
@@ -261,15 +261,15 @@ To prove Viento's cross-environment capability, the full system was launched and
 
 ## 📊 Concurrency Stress & Throughput Benchmarks
 
-We subjected Viento's scheduling core to intensive burst stress tests across varying concurrency levels to validate backpressure enforcement and streaming fidelity:
+We subjected Viento's scheduling core to intensive in-memory async stress tests across varying concurrency levels to validate queue backpressure enforcement and streaming fidelity:
 
 | Concurrency Level | Total Requests | Total Tokens | Duration | Throughput | p50 Latency | p95 Latency | Dropped Tokens | Status |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **1x** | 5 jobs | 60 | 0.13s | **461.5 tok/s** | 23.9 ms | 35.1 ms | `0 (0.0%)` | 🟢 **PASSED** |
-| **2x** | 10 jobs | 120 | 0.13s | **894.6 tok/s** | 12.3 ms | 18.1 ms | `0 (0.0%)` | 🟢 **PASSED** |
-| **4x** | 20 jobs | 240 | 0.14s | **1,714.3 tok/s** | 6.4 ms | 9.4 ms | `0 (0.0%)` | 🟢 **PASSED** |
-| **8x** | 40 jobs | 480 | 0.15s | **3,237.0 tok/s** | 3.4 ms | 5.0 ms | `0 (0.0%)` | 🟢 **PASSED** |
-| **16x** | 80 jobs | 960 | 0.16s | **6,000.0 tok/s** | 1.8 ms | 2.7 ms | `0 (0.0%)` | 🟢 **PASSED** |
+| **1x** | 6 jobs | 96 | 0.10s | **933.6 tok/s** | 72.5 ms | 99.7 ms | `0 (0.0%)` | 🟢 **PASSED** |
+| **2x** | 12 jobs | 192 | 0.13s | **1,473.6 tok/s** | 83.0 ms | 127.8 ms | `0 (0.0%)` | 🟢 **PASSED** |
+| **4x** | 24 jobs | 384 | 0.23s | **1,667.6 tok/s** | 143.1 ms | 209.7 ms | `0 (0.0%)` | 🟢 **PASSED** |
+| **8x** | 48 jobs | 768 | 0.51s | **1,513.9 tok/s** | 389.0 ms | 489.9 ms | `0 (0.0%)` | 🟢 **PASSED** |
+| **16x** | 96 jobs | 1,536 | 0.75s | **2,048.5 tok/s** | 474.3 ms | 730.3 ms | `0 (0.0%)` | 🟢 **PASSED** |
 
 <div align="center">
 

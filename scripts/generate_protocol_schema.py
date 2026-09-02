@@ -74,14 +74,16 @@ def main() -> None:
         model_ref_name = model_cls.__name__
         definitions[model_ref_name] = payload_schema
 
-        discriminated_schemas.append({
-            "type": "object",
-            "properties": {
-                "type": {"const": type_name},
-                "payload": {"$ref": f"#/$defs/{model_ref_name}"},
-            },
-            "required": ["type", "payload"],
-        })
+        discriminated_schemas.append(
+            {
+                "type": "object",
+                "properties": {
+                    "type": {"const": type_name},
+                    "payload": {"$ref": f"#/$defs/{model_ref_name}"},
+                },
+                "required": ["type", "payload"],
+            }
+        )
 
     base_schema["$defs"] = definitions
     base_schema["discriminated_frame_payloads"] = discriminated_schemas

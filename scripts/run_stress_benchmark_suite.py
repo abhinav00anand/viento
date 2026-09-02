@@ -5,6 +5,7 @@ import sys
 import time
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock
+
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.abspath("."))
@@ -133,12 +134,19 @@ async def run_concurrency_tier(concurrency: int, num_requests: int) -> Dict[str,
             job_id=f"bench_job_{concurrency}_{idx}",
             request_id=f"req_{concurrency}_{idx}",
             sequence=idx,
-            payload={"model": "mock-bench-model", "messages": [{"role": "user", "content": "benchmark test"}], "stream": True},
+            payload={
+                "model": "mock-bench-model",
+                "messages": [{"role": "user", "content": "benchmark test"}],
+                "stream": True,
+            },
         )
         await scheduler.submit_job(env)
 
         # Poll until job completes or fails
-        while f"bench_job_{concurrency}_{idx}" not in completed_jobs and f"bench_job_{concurrency}_{idx}" not in failed_jobs:
+        while (
+            f"bench_job_{concurrency}_{idx}" not in completed_jobs
+            and f"bench_job_{concurrency}_{idx}" not in failed_jobs
+        ):
             await asyncio.sleep(0.001)
 
         req_elapsed = (time.perf_counter() - req_start) * 1000.0
@@ -174,7 +182,9 @@ async def run_concurrency_tier(concurrency: int, num_requests: int) -> Dict[str,
         "p95_latency_ms": round(p95, 2),
         "p99_latency_ms": round(p99, 2),
         "dropped_tokens": dropped_tokens,
-        "queue_drop_rate_pct": 0.0 if dropped_tokens == 0 else round((dropped_tokens / expected_tokens) * 100, 2),
+        "queue_drop_rate_pct": (
+            0.0 if dropped_tokens == 0 else round((dropped_tokens / expected_tokens) * 100, 2)
+        ),
         "status": "PASSED" if dropped_tokens == 0 else "DEGRADED",
     }
 
@@ -224,17 +234,19 @@ async def main():
     print(f"\n[✓] Saved measured benchmark data to: {report_path}")
 
     # Generate Markdown Report
-    rows = "\n".join([
-        f"| {r['concurrency']}x | {r['requests']} | {r['throughput_tok_per_sec']} tok/s | {r['p50_latency_ms']} ms | {r['p95_latency_ms']} ms | {r['p99_latency_ms']} ms | {r['dropped_tokens']} (0.0%) | ✅ PASSED |"
-        for r in benchmark_results
-    ])
+    rows = "\n".join(
+        [
+            f"| {r['concurrency']}x | {r['requests']} | {r['throughput_tok_per_sec']} tok/s | {r['p50_latency_ms']} ms | {r['p95_latency_ms']} ms | {r['p99_latency_ms']} ms | {r['dropped_tokens']} (0.0%) | ✅ PASSED |"
+            for r in benchmark_results
+        ]
+    )
 
     md_report = f"""# Viento In-Memory Scheduler Stress Benchmark Report
 
-**Benchmark Type**: Real In-Memory Async Scheduler & Protocol Pipeline  
-**Orchestration Under Test**: `JobScheduler` + `asyncio.Semaphore` + `asyncio.Queue` + `ProtocolEnvelope`  
-**Execution Environment**: Python {sys.version.split()[0]} on {sys.platform}  
-**Date**: September 2, 2026  
+**Benchmark Type**: Real In-Memory Async Scheduler & Protocol Pipeline
+**Orchestration Under Test**: `JobScheduler` + `asyncio.Semaphore` + `asyncio.Queue` + `ProtocolEnvelope`
+**Execution Environment**: Python {sys.version.split()[0]} on {sys.platform}
+**Date**: September 2, 2026
 
 ---
 
@@ -281,11 +293,20 @@ async def main():
         font_body = ImageFont.truetype("arial.ttf", 14)
         font_bold = ImageFont.truetype("arialbd.ttf", 14)
     except Exception:
-        font_title = font_sub = font_box_val = font_box_lbl = font_body = font_bold = ImageFont.load_default()
+        font_title = font_sub = font_box_val = font_box_lbl = font_body = font_bold = (
+            ImageFont.load_default()
+        )
 
     # Title
-    draw.text((50, 35), "VIENTO IN-MEMORY SCHEDULER STRESS BENCHMARK", fill=(0, 230, 255), font=font_title)
-    draw.text((50, 75), "Real async wall-clock measurements: queue backpressure & token orchestration", fill=(140, 150, 175), font=font_sub)
+    draw.text(
+        (50, 35), "VIENTO IN-MEMORY SCHEDULER STRESS BENCHMARK", fill=(0, 230, 255), font=font_title
+    )
+    draw.text(
+        (50, 75),
+        "Real async wall-clock measurements: queue backpressure & token orchestration",
+        fill=(140, 150, 175),
+        font=font_sub,
+    )
 
     # 3 Metric Cards with ACTUAL MEASURED NUMBERS!
     cards = [
@@ -296,13 +317,23 @@ async def main():
 
     for i, (label, val, color) in enumerate(cards):
         x = 50 + i * 380
-        draw.rounded_rectangle([x, 115, x + 350, 195], radius=10, fill=(24, 28, 42), outline=(45, 52, 75), width=2)
+        draw.rounded_rectangle(
+            [x, 115, x + 350, 195], radius=10, fill=(24, 28, 42), outline=(45, 52, 75), width=2
+        )
         draw.text((x + 20, 128), label, fill=(130, 140, 165), font=font_box_lbl)
         draw.text((x + 20, 148), val, fill=color, font=font_box_val)
 
     # Table Header
     draw.rectangle([50, 225, 1150, 265], fill=(30, 36, 56))
-    headers = [("CONCURRENCY", 70), ("REQUESTS", 230), ("THROUGHPUT", 390), ("P50 LATENCY", 560), ("P95 LATENCY", 730), ("TOKEN DROPS", 900), ("STATUS", 1040)]
+    headers = [
+        ("CONCURRENCY", 70),
+        ("REQUESTS", 230),
+        ("THROUGHPUT", 390),
+        ("P50 LATENCY", 560),
+        ("P95 LATENCY", 730),
+        ("TOKEN DROPS", 900),
+        ("STATUS", 1040),
+    ]
     for h, x in headers:
         draw.text((x, 237), h, fill=(200, 210, 230), font=font_bold)
 
@@ -312,8 +343,13 @@ async def main():
         draw.line([50, y, 1150, y], fill=(35, 42, 65), width=1)
         y_text = y + 12
         draw.text((70, y_text), f"{r['concurrency']}x", fill=(255, 255, 255), font=font_body)
-        draw.text((230, y_text), str(r['requests']), fill=(200, 200, 200), font=font_body)
-        draw.text((390, y_text), f"{r['throughput_tok_per_sec']} tok/s", fill=(0, 255, 170), font=font_bold)
+        draw.text((230, y_text), str(r["requests"]), fill=(200, 200, 200), font=font_body)
+        draw.text(
+            (390, y_text),
+            f"{r['throughput_tok_per_sec']} tok/s",
+            fill=(0, 255, 170),
+            font=font_bold,
+        )
         draw.text((560, y_text), f"{r['p50_latency_ms']} ms", fill=(255, 255, 255), font=font_body)
         draw.text((730, y_text), f"{r['p95_latency_ms']} ms", fill=(255, 190, 0), font=font_body)
         draw.text((900, y_text), "0 (0.0%)", fill=(0, 220, 255), font=font_body)
@@ -321,7 +357,12 @@ async def main():
         y += 45
 
     # Footer note
-    draw.text((50, 625), "Note: Measured directly from Python JobScheduler orchestration without external network hops.", fill=(100, 110, 135), font=font_sub)
+    draw.text(
+        (50, 625),
+        "Note: Measured directly from Python JobScheduler orchestration without external network hops.",
+        fill=(100, 110, 135),
+        font=font_sub,
+    )
 
     chart_path = "test_results/concurrency_stress_benchmark.png"
     img.save(chart_path)
