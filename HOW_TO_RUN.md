@@ -30,7 +30,7 @@ git clone https://github.com/abhinav00anand/viento.git
 cd viento
 
 # Install the lightweight SDK in editable mode
-pip install -e SDK/
+pip install -e .
 ```
 
 Verify installation:
@@ -79,7 +79,7 @@ Connect your node to the live production mesh at `viento.onrender.com`:
 
 ```bash
 # Export the cluster bootstrap key (contact cluster admin or use your configured secret)
-export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
 
 # Connect to the live mesh
 viento run --server wss://viento.onrender.com/ws/runtime
@@ -87,7 +87,7 @@ viento run --server wss://viento.onrender.com/ws/runtime
 
 *(On Windows PowerShell)*:
 ```powershell
-$env:VIENTO_BOOTSTRAP_KEY="viento_dev_secret_key_2026"
+$env:VIENTO_BOOTSTRAP_KEY="<your-bootstrap-key>"
 viento run --server wss://viento.onrender.com/ws/runtime
 ```
 
@@ -183,8 +183,8 @@ You can run worker nodes on free or low-cost cloud GPUs in just a few minutes.
    ```bash
    git clone https://github.com/abhinav00anand/viento.git
    cd viento
-   pip install -e SDK/
-   export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+   pip install -e .
+   export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
    viento run --server wss://viento.onrender.com/ws/runtime
    ```
 
@@ -200,7 +200,7 @@ import subprocess
 import os
 
 env = os.environ.copy()
-env["VIENTO_BOOTSTRAP_KEY"] = "viento_dev_secret_key_2026"
+env["VIENTO_BOOTSTRAP_KEY"] = "<your-bootstrap-key>"
 
 proc = subprocess.Popen(
     ["viento", "run", "--server", "wss://viento.onrender.com/ws/runtime"],
@@ -211,27 +211,20 @@ print("Viento worker launched on Kaggle GPU!")
 
 ---
 
-## 🏢 Self-Hosting the Cloud Gateway (Optional)
+## 🏢 Cloud Gateway Connectivity & Custom Relays
 
-If you wish to run your own private cloud gateway rather than using `viento.onrender.com`:
+Viento edge nodes and OpenAI client applications connect to the live managed Cloud Gateway hosted at `https://viento.onrender.com`.
+
+If you point nodes to a private enterprise relay or custom cluster:
 
 ```bash
-cd Cloud
-pip install -r requirements.txt
+# Configure custom cluster endpoint
+export VIENTO_SERVER_URL=wss://your-gateway.example.com/ws/runtime
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
 
-# Configure settings
-export VIENTO_ENV=development
-export VIENTO_BOOTSTRAP_KEY=my_custom_secret_key
-export VIENTO_PORT=10000
-
-# Start server
-uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload
+# Run edge node against your custom gateway
+viento run --server wss://your-gateway.example.com/ws/runtime
 ```
-
-Your private gateway is now available at:
-- Gateway: `http://localhost:10000`
-- WebSockets: `ws://localhost:10000/ws/runtime`
-- Docs: `http://localhost:10000/docs`
 
 ---
 

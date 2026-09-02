@@ -7,7 +7,7 @@ name = "viento"
 version = "0.4.0"
 description = "Viento: Distributed AI inference runtime SDK — connect your local LLMs to the cloud mesh"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Viento Cloud Team", email = "indrohelpdesk@gmail.com" }]
 maintainers = [{ name = "Viento Cloud Team", email = "indrohelpdesk@gmail.com" }]
 keywords = [
@@ -18,7 +18,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",

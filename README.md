@@ -20,7 +20,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <b>Viento</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e SDK/</code> • CLI: <code>viento</code>).<br>
+  <b>Viento</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e .</code> • CLI: <code>viento</code>).<br>
   Transform heterogeneous local workstations, cloud GPUs, and edge rigs into a unified, high-throughput, OpenAI-compatible AI cloud.
 </p>
 
@@ -56,8 +56,8 @@
 - **💸 Zero Cloud GPU Lock-In**: Stop paying 24/7 pricing for idle cloud GPU instances. Turn on compute only when you need it, wherever you have it.
 - **🪶 Ultra-Lightweight Footprint**: The Viento agent consumes **under 25 MB RAM** and virtually 0% idle CPU. No heavy Docker engines required, no kernel modules, just pure asynchronous Python (`asyncio`).
 - **🛡️ Instant Firewall Penetration (Reverse WSS Tunnels)**: Workers establish outbound secure WebSocket tunnels to `wss://viento.onrender.com/ws/runtime`. **No public IP, no open ports, and no NAT punch-through required.**
-- **⚡ Instant Socket-Level Cancellation**: If a user cancels a query mid-stream, Viento aborts the local engine's generation socket in `< 2 milliseconds`, freeing your VRAM immediately instead of wasting GPU compute.
-- **📦 Zero Token Drop Guarantee**: Invariant-tested backpressure queues ensure 100% of tokens arrive to the client intact even during heavy parallel traffic bursts.
+- **⚡ Sub-2ms Cancellation Teardown**: If a user cancels a query mid-stream, Viento aborts the local engine's generation socket with sub-2ms latency in benchmarks, freeing your VRAM immediately instead of wasting GPU compute.
+- **📦 Zero-Token-Loss Architecture**: Invariant-tested backpressure queues and sequence tracking verified 100% token integrity without dropped chunks across parallel stress bursts in test environments.
 </details>
 
 <details open>
@@ -68,13 +68,13 @@ You can connect your local machine or cloud GPU to the live production mesh in 3
 
 ```bash
 # 1. Install the lightweight Viento SDK
-pip install -e SDK/
+pip install -e .
 
 # 2. Make sure your local engine is running (e.g. Ollama)
 ollama run llama3:latest
 
 # 3. Connect your node to the live mesh
-export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>  # Contact indrohelpdesk@gmail.com or set custom cluster key
 viento run --server wss://viento.onrender.com/ws/runtime
 ```
 
@@ -317,13 +317,13 @@ For full step-by-step instructions on running each component, connecting nodes, 
 
 ```bash
 # 1. Install the lightweight Viento SDK
-pip install -e SDK/
+pip install -e .
 
 # 2. Start your local Ollama or vLLM engine
 ollama run llama3:latest
 
 # 3. Connect your node to the live production mesh
-export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>  # Contact indrohelpdesk@gmail.com or set custom cluster key
 viento run --server wss://viento.onrender.com/ws/runtime
 
 # 4. Query the mesh via OpenAI SDK

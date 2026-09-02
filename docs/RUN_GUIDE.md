@@ -58,34 +58,20 @@ This document provides complete, step-by-step instructions for installing, confi
 
 The Cloud Control Plane receives HTTP inference requests from users, mints temporary cryptographic keys, and dispatches requests across active WebSocket worker sessions.
 
-### Local Development Setup:
+### Gateway Endpoints & Connectivity:
 
+Viento connects out-of-the-box to the live managed Cloud Control Plane at `https://viento.onrender.com`:
+- **Interactive Swagger Docs**: `https://viento.onrender.com/docs`
+- **ReDoc Documentation**: `https://viento.onrender.com/redoc`
+- **Health Probe**: `GET https://viento.onrender.com/healthz` (Returns active runtime count)
+- **Node WebSocket Gateway**: `wss://viento.onrender.com/ws/runtime`
+- **OpenAI-Compatible Chat Completions**: `POST https://viento.onrender.com/v1/chat/completions`
+
+To connect to a custom private relay or enterprise cluster:
 ```bash
-# Navigate to the Cloud directory
-cd Cloud
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment variables
-export VIENTO_ENV=development
-export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
-export VIENTO_PORT=10000
-
-# (On Windows PowerShell)
-# $env:VIENTO_ENV="development"
-# $env:VIENTO_BOOTSTRAP_KEY="viento_dev_secret_key_2026"
-# $env:VIENTO_PORT="10000"
-
-# Start the server
-uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload
+export VIENTO_SERVER_URL=wss://your-gateway.example.com/ws/runtime
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
 ```
-
-### Server Endpoints:
-- **Interactive Swagger Docs**: `http://localhost:10000/docs`
-- **ReDoc Documentation**: `http://localhost:10000/redoc`
-- **Health Probe**: `http://localhost:10000/healthz` (Returns active runtime count)
-- **Runtime WebSocket**: `ws://localhost:10000/ws/runtime`
 
 ---
 
@@ -120,10 +106,10 @@ The `viento` SDK connects to the cloud gateway, authenticates via `VIENTO_BOOTST
 
 ```bash
 # Install the SDK in editable mode
-pip install -e SDK/
+pip install -e .
 
 # Set the bootstrap secret matching your Cloud Server
-export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
 
 # Connect to the local Cloud Server
 viento run --server ws://localhost:10000/ws/runtime
@@ -218,7 +204,7 @@ studio.start(machine=Machine.T4)
 print(studio.run("""
 git clone https://github.com/abhinav00anand/viento.git
 cd viento
-pip install -e SDK/
+pip install -e .
 viento run --server wss://viento.onrender.com/ws/runtime
 """))
 
