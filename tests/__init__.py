@@ -1,1 +1,1 @@
-"""Zephyr SDK test suite."""
+"""Viento SDK test suite."""

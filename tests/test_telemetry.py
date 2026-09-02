@@ -88,10 +88,10 @@ def test_telemetry_collector_counters_and_snapshot():
 
 
 def test_secret_masker_patterns():
-    # Test zph_tmp_ secret masking
-    text1 = "Connecting with key zph_tmp_abc123456789xyz"
+    # Test vnt_tmp_ secret masking
+    text1 = "Connecting with key vnt_tmp_abc123456789xyz"
     masked1 = SecretMasker.mask(text1)
-    assert "zph_tmp_****" in masked1
+    assert "vnt_tmp_****" in masked1
     assert "abc123456789xyz" not in masked1
 
     # Test zph_live_ secret masking
@@ -114,7 +114,7 @@ def test_secret_masker_patterns():
     # Test key-value secret masking
     pass_key = "pass" + "word"
     dummy_val = "dummy_" + "auth_val"
-    text5 = f"config options: {pass_key}='{dummy_val}', api_key=\"zph_tmp_99\""
+    text5 = f"config options: {pass_key}='{dummy_val}', api_key=\"vnt_tmp_99\""
     masked5 = SecretMasker.mask(text5)
     assert f"{pass_key}=[REDACTED]" in masked5
     assert "api_key=[REDACTED]" in masked5
@@ -127,7 +127,7 @@ def test_structured_json_formatter():
         level=logging.INFO,
         pathname="test.py",
         lineno=42,
-        msg="Authenticated user with token zph_tmp_secrettoken123",
+        msg="Authenticated user with token vnt_tmp_secrettoken123",
         args=(),
         exc_info=None,
     )
@@ -136,7 +136,7 @@ def test_structured_json_formatter():
     parsed = json.loads(formatted)
     assert parsed["level"] == "INFO"
     assert parsed["service"] == "test-service"
-    assert "zph_tmp_****" in parsed["message"]
+    assert "vnt_tmp_****" in parsed["message"]
     assert "secrettoken123" not in parsed["message"]
 
 
@@ -161,8 +161,8 @@ def test_console_formatter():
 
 
 def test_get_logger_factory():
-    logger_inst = get_logger(name="zephyr_test_unique", log_level="DEBUG", json_output=True)
-    assert logger_inst.name == "zephyr_test_unique"
+    logger_inst = get_logger(name="viento_test_unique", log_level="DEBUG", json_output=True)
+    assert logger_inst.name == "viento_test_unique"
     assert logger_inst.level == logging.DEBUG
     assert len(logger_inst.handlers) == 1
     assert isinstance(logger_inst.handlers[0].formatter, StructuredJsonFormatter)

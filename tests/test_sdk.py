@@ -8,7 +8,7 @@ import pytest
 
 from viento.backends.base import ExecutionHandle, GenerationResult
 from viento.client.client import AsyncVientoClient, VientoClient
-from viento.config.loader import ConfigManager, RuntimeState, ZephyrConfig
+from viento.config.loader import ConfigManager, RuntimeState, VientoConfig
 from viento.connection.manager import ConnectionManager
 from viento.scheduler.scheduler import JobScheduler, JobStatus
 
@@ -27,7 +27,7 @@ def test_config_defaults_and_serialization(tmp_path):
 
 def test_runtime_state_security_stripping(tmp_path):
     cm = ConfigManager(base_dir=tmp_path)
-    state = RuntimeState(session_id="sess_123", active_key="zph_tmp_secret_123")
+    state = RuntimeState(session_id="sess_123", active_key="vnt_tmp_secret_123")
     cm.save_runtime_state(state)
 
     loaded = cm.load_runtime_state()
@@ -36,7 +36,7 @@ def test_runtime_state_security_stripping(tmp_path):
 
 
 def test_connection_manager_init():
-    cfg = ZephyrConfig()
+    cfg = VientoConfig()
     cm = ConnectionManager(config=cfg)
     assert cm.is_connected is False
     assert cm.session_id is None
@@ -180,18 +180,18 @@ async def test_scheduler_stop_purges_queue_and_drains_tasks():
 
 
 def test_client_headers_and_init():
-    client = VientoClient(base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123")
-    assert client.api_key == "zph_tmp_123"
+    client = VientoClient(base_url="https://viento-i2ho.onrender.com", api_key="vnt_tmp_123")
+    assert client.api_key == "vnt_tmp_123"
     headers = client._headers()
     assert "Authorization" in headers
-    assert headers["Authorization"] == "Bearer zph_tmp_123"
+    assert headers["Authorization"] == "Bearer vnt_tmp_123"
 
 
 def test_async_client_headers_and_init():
     async_client = AsyncVientoClient(
-        base_url="https://zephyr-i2ho.onrender.com", api_key="zph_tmp_123"
+        base_url="https://viento-i2ho.onrender.com", api_key="vnt_tmp_123"
     )
-    assert async_client.api_key == "zph_tmp_123"
+    assert async_client.api_key == "vnt_tmp_123"
     headers = async_client._headers()
     assert "Authorization" in headers
-    assert headers["Authorization"] == "Bearer zph_tmp_123"
+    assert headers["Authorization"] == "Bearer vnt_tmp_123"

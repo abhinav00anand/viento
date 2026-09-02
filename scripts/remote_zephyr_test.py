@@ -3,7 +3,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 print("=" * 65)
-print("  ⚡ ZEPHYR DISTRIBUTED INFERENCE SYSTEM - CLOUD GPU TEST ⚡")
+print("  ⚡ VIENTO DISTRIBUTED INFERENCE SYSTEM - CLOUD GPU TEST ⚡")
 print("=" * 65)
 
 # 1. GPU Telemetry
@@ -53,9 +53,9 @@ vram_used = torch.cuda.memory_allocated(0) / (1024 ** 2)
 print(f"[✓] Model Loaded in {load_duration:.2f}s | VRAM Allocated: {vram_used:.1f} MB")
 
 # 4. Generate Inference Prompt
-prompt = "Explain in 3 short bullet points what Zephyr distributed edge inference mesh is and why it is useful."
+prompt = "Explain in 3 short bullet points what Viento distributed edge inference mesh is and why it is useful."
 messages = [
-    {"role": "system", "content": "You are Zephyr AI, an intelligent agent running on the distributed inference mesh."},
+    {"role": "system", "content": "You are Viento AI, an intelligent agent running on the distributed inference mesh."},
     {"role": "user", "content": prompt}
 ]
 text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)

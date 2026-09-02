@@ -1,12 +1,12 @@
 """
-Zephyr SDK — Distributed AI Inference Runtime
+Viento SDK — Distributed AI Inference Runtime
 
-Connect your local LLMs (Ollama, llama.cpp, vLLM) to the Zephyr Cloud
+Connect your local LLMs (Ollama, llama.cpp, vLLM) to the Viento Cloud
 mesh and serve distributed inference jobs via the OpenAI-compatible API.
 
 Quick Start:
     >>> from viento.client.client import VientoClient
-    >>> client = VientoClient(api_key="zph_tmp_...")
+    >>> client = VientoClient(api_key="vnt_tmp_...")
     >>> response = client.chat.completions.create(
     ...     model="llama3:latest",
     ...     messages=[{"role": "user", "content": "Hello!"}],
@@ -19,7 +19,7 @@ Documentation: https://github.com/abhinav00anand/zephyr
 """
 
 __version__ = "0.4.0"
-__author__ = "Zephyr Cloud Team"
+__author__ = "Viento Cloud Team"
 __email__ = "indrohelpdesk@gmail.com"
 __license__ = "MIT"
 __url__ = "https://github.com/abhinav00anand/zephyr"

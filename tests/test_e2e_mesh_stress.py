@@ -68,12 +68,12 @@ def test_handshake_payload_contracts():
     hello = HelloPayload(
         runtime_id="rt_stress_test_node_01",
         version="1.0.0",
-        auth_key="zephyr_bootstrap_secret",
+        auth_key="viento_bootstrap_secret",
     )
     assert hello.runtime_id == "rt_stress_test_node_01"
 
     welcome = WelcomePayload(
-        session_id="zph_sess_stress_999",
+        session_id="vnt_sess_stress_999",
         status="connected",
         assigned_at=time.time(),
         heartbeat_interval=15.0,

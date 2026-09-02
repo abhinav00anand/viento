@@ -1,4 +1,4 @@
-"""Unit tests for Zephyr protocol envelopes, serialization, validation, and sequence tracking."""
+"""Unit tests for Viento protocol envelopes, serialization, validation, and sequence tracking."""
 
 import json
 
@@ -51,9 +51,9 @@ def test_register_payload_instantiation():
 
 
 def test_ready_payload_instantiation():
-    payload = SessionReadyPayload(session_id="sess-01", api_key="zph_tmp_123", expires_at=1000.0)
+    payload = SessionReadyPayload(session_id="sess-01", api_key="vnt_tmp_123", expires_at=1000.0)
     assert payload.session_id == "sess-01"
-    assert payload.api_key.get_secret_value() == "zph_tmp_123"
+    assert payload.api_key.get_secret_value() == "vnt_tmp_123"
 
 
 def test_heartbeat_payload_instantiation():

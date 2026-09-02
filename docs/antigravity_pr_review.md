@@ -1,6 +1,6 @@
-# 🤖 Antigravity PR Review & Deep Check Agent for Zephyr SDK
+# 🤖 Antigravity PR Review & Deep Check Agent for Viento SDK
 
-The **Zephyr SDK** integrates Google Antigravity as an automated Pull Request (PR) code review agent. Powered by the Google Antigravity SDK (`google-antigravity`) and Gemini models, the agent automatically evaluates pull requests, enforces architectural invariants, details **what is wrong** and **what is needed** with concrete code suggestions, and posts structured comments directly onto GitHub Pull Requests.
+The **Viento SDK** integrates Google Antigravity as an automated Pull Request (PR) code review agent. Powered by the Google Antigravity SDK (`google-antigravity`) and Gemini models, the agent automatically evaluates pull requests, enforces architectural invariants, details **what is wrong** and **what is needed** with concrete code suggestions, and posts structured comments directly onto GitHub Pull Requests.
 
 ---
 
@@ -22,7 +22,7 @@ The **Zephyr SDK** integrates Google Antigravity as an automated Pull Request (P
 
 ## Key Capabilities
 
-- **Deep Architectural Grounding**: Specifically tuned for Zephyr's Canonical Envelope Protocol (V1.0), `InferenceBackend` lifecycle, and zero token drop backpressure queueing.
+- **Deep Architectural Grounding**: Specifically tuned for Viento's Canonical Envelope Protocol (V1.0), `InferenceBackend` lifecycle, and zero token drop backpressure queueing.
 - **Direct GitHub PR Commenting**: Posts full reviews and comments directly to the GitHub Pull Request conversation via the GitHub API.
 - **Actionable Remediation**: Explicitly highlights **what is wrong & why** (with file and line references) and provides **what is needed** (complete, copy-pasteable ````suggestion```` blocks).
 - **5-Pillar Deep Check**: Thoroughly investigates backwards compatibility, async task concurrency, socket lifecycles, telemetry fallback, and zero-trust credential hygiene.

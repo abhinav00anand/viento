@@ -8,7 +8,7 @@ from viento.telemetry.collector import (
 from viento.telemetry.logging import (
     SecretMasker,
     StructuredJsonFormatter,
-    ZephyrLogger,
+    VientoLogger,
     get_logger,
 )
 
@@ -16,7 +16,7 @@ __all__ = [
     "TelemetryCollector",
     "LatencyHistogram",
     "HardwareStats",
-    "ZephyrLogger",
+    "VientoLogger",
     "SecretMasker",
     "StructuredJsonFormatter",
     "get_logger",

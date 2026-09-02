@@ -54,6 +54,6 @@ develop-eggs/
 docs/_build/
 site/
 
-# Zephyr-specific
-*.zephyr_tmp
-zephyr_state.json
+# Viento-specific
+*.viento_tmp
+viento_state.json

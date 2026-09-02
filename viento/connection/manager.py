@@ -1,7 +1,7 @@
 """
-Connection Supervisor for Zephyr SDK.
+Connection Supervisor for Viento SDK.
 
-Handles outbound WebSocket (WSS) communication with Zephyr Cloud, canonical ProtocolEnvelope
+Handles outbound WebSocket (WSS) communication with Viento Cloud, canonical ProtocolEnvelope
 framing (version 1.0), bootstrap authentication, hardware telemetry, heartbeat keepalives,
 directional sequence tracking and validation, and automatic reconnection.
 """
@@ -25,7 +25,7 @@ except ImportError:
 
 from viento.backends.base import InferenceBackend
 from viento.backends.ollama import OllamaAdapter
-from viento.config.loader import ConfigManager, ZephyrConfig
+from viento.config.loader import ConfigManager, VientoConfig
 from viento.protocol.envelope import (
     CancelAckPayload,
     FrameType,
@@ -48,16 +48,16 @@ logger = logging.getLogger("viento.connection")
 
 class ConnectionManager:
     """
-    Supervisor managing persistent WebSocket connection with Zephyr Cloud gateway.
+    Supervisor managing persistent WebSocket connection with Viento Cloud gateway.
 
-    Sequence counters are scoped to the logical Zephyr session rather than the
+    Sequence counters are scoped to the logical Viento session rather than the
     underlying WebSocket connection. This allows reconnects to resume an
     established session without silently replaying sequence numbers.
     """
 
     def __init__(
         self,
-        config: Optional[ZephyrConfig] = None,
+        config: Optional[VientoConfig] = None,
         config_manager: Optional[ConfigManager] = None,
         backend: Optional[InferenceBackend] = None,
     ):
@@ -160,7 +160,7 @@ class ConnectionManager:
 
         while self.is_running and not self._shutdown_event.is_set():
             try:
-                logger.info(f"Connecting to Zephyr Cloud at {self.config.server_url}...")
+                logger.info(f"Connecting to Viento Cloud at {self.config.server_url}...")
                 if websockets is None:
                     raise RuntimeError("websockets library is required.")
 

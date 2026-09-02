@@ -1,5 +1,5 @@
 """
-Protocol Schema Generator Script for Zephyr.
+Protocol Schema Generator Script for Viento.
 
 Generates Private/protocol_specs/schemas.json directly from Cloud ProtocolEnvelope model schema
 and discriminated payload union mappings. Ensures single-source-of-truth canonical contract definition.

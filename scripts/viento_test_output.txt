@@ -1,16 +1,16 @@
 ============================= test session starts ==============================
 platform linux -- Python 3.12.11, pytest-9.1.1, pluggy-1.6.0
-rootdir: /teamspace/studios/this_studio/zephyr
+rootdir: /teamspace/studios/this_studio/viento
 configfile: pyproject.toml
 plugins: anyio-4.14.1, asyncio-1.4.0
 asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
 collected 71 items
 
-zephyr/tests/test_backends.py .......                                    [  9%]
-zephyr/tests/test_ollama_adapter.py .......                              [ 19%]
-zephyr/tests/test_protocol.py ..........................                 [ 56%]
-zephyr/tests/test_reconnection.py ..........                             [ 70%]
-zephyr/tests/test_sdk.py .........                                       [ 83%]
-zephyr/tests/test_telemetry.py ............                              [100%]
+viento/tests/test_backends.py .......                                    [  9%]
+viento/tests/test_ollama_adapter.py .......                              [ 19%]
+viento/tests/test_protocol.py ..........................                 [ 56%]
+viento/tests/test_reconnection.py ..........                             [ 70%]
+viento/tests/test_sdk.py .........                                       [ 83%]
+viento/tests/test_telemetry.py ............                              [100%]
 
 ============================== 71 passed in 4.11s ==============================

@@ -1,12 +1,12 @@
-# 🚀 How to Run Zephyr & Viento SDK: Complete Step-by-Step Guide
+# 🚀 How to Run Viento & Viento SDK: Complete Step-by-Step Guide
 
-Welcome to the operator and execution guide for **Zephyr & Viento**. This document explains exactly what to run and how to run each component, step by step.
+Welcome to the operator and execution guide for **Viento & Viento**. This document explains exactly what to run and how to run each component, step by step.
 
 ---
 
 ## 🌐 Live Mesh Network Endpoints
 
-Zephyr is deployed and running live on the cloud:
+Viento is deployed and running live on the cloud:
 
 | Component | Live Production URL | Purpose |
 | :--- | :--- | :--- |
@@ -21,13 +21,13 @@ Zephyr is deployed and running live on the cloud:
 
 ## ⚡ Quickstart: Connect an Edge Node in 3 Steps
 
-If you want to contribute compute (local GPU, CPU, or cloud instance) to the live Zephyr mesh:
+If you want to contribute compute (local GPU, CPU, or cloud instance) to the live Viento mesh:
 
 ### Step 1: Install Viento SDK
 ```bash
 # Clone the repository
 git clone https://github.com/abhinav00anand/zephyr.git
-cd zephyr
+cd viento
 
 # Install the lightweight SDK in editable mode
 pip install -e SDK/
@@ -42,7 +42,7 @@ viento --help
 
 ### Step 2: Start Your Local Inference Engine
 
-Zephyr's lightweight architecture works with any existing inference engine:
+Viento's lightweight architecture works with any existing inference engine:
 
 #### Option A: Ollama (Easiest for Local Workstations & Laptops)
 1. Install from [ollama.ai](https://ollama.ai) and start:
@@ -79,7 +79,7 @@ Connect your node to the live production mesh at `viento.onrender.com`:
 
 ```bash
 # Export the cluster bootstrap key (contact cluster admin or use your configured secret)
-export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
 
 # Connect to the live mesh
 viento run --server wss://viento.onrender.com/ws/runtime
@@ -87,17 +87,17 @@ viento run --server wss://viento.onrender.com/ws/runtime
 
 *(On Windows PowerShell)*:
 ```powershell
-$env:ZEPHYR_BOOTSTRAP_KEY="zephyr_dev_secret_key_2026"
+$env:VIENTO_BOOTSTRAP_KEY="viento_dev_secret_key_2026"
 viento run --server wss://viento.onrender.com/ws/runtime
 ```
 
 Upon connection, Viento discovers your local models and prints your session banner:
 ```text
 ╔══════════════════════════════════════════════════════════════╗
-║               ⚡  ZEPHYR NODE AUTHENTICATED  ⚡              ║
+║               ⚡  VIENTO NODE AUTHENTICATED  ⚡              ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Session ID  : zph_sess_7a3d12c8                            ║
-║  API Key     : zph_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
+║  Session ID  : vnt_sess_7a3d12c8                            ║
+║  API Key     : vnt_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
 ║  Models      : llama3:latest, qwen2.5:0.5b                  ║
 ║  Gateway     : wss://viento.onrender.com/ws/runtime          ║
 ║  Status      : 🟢 Online — ready for streaming inference    ║
@@ -114,10 +114,10 @@ Once your worker is connected, anyone with your session key (or cluster API key)
 ```python
 from openai import OpenAI
 
-# Point client directly to the live Zephyr gateway
+# Point client directly to the live Viento gateway
 client = OpenAI(
     base_url="https://viento.onrender.com/v1",
-    api_key="zph_tmp_YOUR_SESSION_KEY"  # Or your cluster API key
+    api_key="vnt_tmp_YOUR_SESSION_KEY"  # Or your cluster API key
 )
 
 # Stream tokens in real-time
@@ -141,7 +141,7 @@ print()
 ### 2. cURL (Streaming Server-Sent Events)
 ```bash
 curl -N https://viento.onrender.com/v1/chat/completions \
-  -H "Authorization: Bearer zph_tmp_YOUR_SESSION_KEY" \
+  -H "Authorization: Bearer vnt_tmp_YOUR_SESSION_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama3:latest",
@@ -155,7 +155,7 @@ curl -N https://viento.onrender.com/v1/chat/completions \
 ### 3. List Available Models Across the Mesh
 ```bash
 curl https://viento.onrender.com/v1/models \
-  -H "Authorization: Bearer zph_tmp_YOUR_SESSION_KEY"
+  -H "Authorization: Bearer vnt_tmp_YOUR_SESSION_KEY"
 ```
 
 ---
@@ -182,9 +182,9 @@ You can run worker nodes on free or low-cost cloud GPUs in just a few minutes.
 3. Or launch manually from inside your Lightning Studio terminal:
    ```bash
    git clone https://github.com/abhinav00anand/zephyr.git
-   cd zephyr
+   cd viento
    pip install -e SDK/
-   export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+   export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
    viento run --server wss://viento.onrender.com/ws/runtime
    ```
 
@@ -192,7 +192,7 @@ You can run worker nodes on free or low-cost cloud GPUs in just a few minutes.
 In a Kaggle Python notebook with GPU enabled:
 ```python
 !git clone https://github.com/abhinav00anand/zephyr.git
-%cd zephyr
+%cd viento
 !pip install -q -e SDK/
 
 # Launch background node
@@ -200,7 +200,7 @@ import subprocess
 import os
 
 env = os.environ.copy()
-env["ZEPHYR_BOOTSTRAP_KEY"] = "zephyr_dev_secret_key_2026"
+env["VIENTO_BOOTSTRAP_KEY"] = "viento_dev_secret_key_2026"
 
 proc = subprocess.Popen(
     ["viento", "run", "--server", "wss://viento.onrender.com/ws/runtime"],
@@ -220,9 +220,9 @@ cd Cloud
 pip install -r requirements.txt
 
 # Configure settings
-export ZEPHYR_ENV=development
-export ZEPHYR_BOOTSTRAP_KEY=my_custom_secret_key
-export ZEPHYR_PORT=10000
+export VIENTO_ENV=development
+export VIENTO_BOOTSTRAP_KEY=my_custom_secret_key
+export VIENTO_PORT=10000
 
 # Start server
 uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload

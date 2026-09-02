@@ -1,5 +1,5 @@
 """
-Local Inference Benchmark Engine for Zephyr SDK.
+Local Inference Benchmark Engine for Viento SDK.
 
 Evaluates Time-to-First-Token (TTFT), Tokens-Per-Second (TPS), backpressure queue latency,
 and backend adapter throughput.

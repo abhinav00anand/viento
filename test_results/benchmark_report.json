@@ -1,6 +1,6 @@
 {
   "timestamp": "2026-09-02 15:05:57 UTC",
-  "suite": "Zephyr Concurrency Stress & Zero-Token-Drop Validation",
+  "suite": "Viento Concurrency Stress & Zero-Token-Drop Validation",
   "total_tests_executed": 59,
   "tests_passed": 59,
   "tests_failed": 0,

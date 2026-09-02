@@ -1,5 +1,5 @@
 """
-Python Client library module for Zephyr Cloud API.
+Python Client library module for Viento Cloud API.
 """
 
 from viento.client.client import AsyncVientoClient, VientoClient

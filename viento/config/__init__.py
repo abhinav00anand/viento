@@ -1,7 +1,7 @@
 """
-Zephyr SDK Configuration Package.
+Viento SDK Configuration Package.
 """
 
-from viento.config.loader import ConfigManager, ZephyrConfig
+from viento.config.loader import ConfigManager, VientoConfig
 
-__all__ = ["ConfigManager", "ZephyrConfig"]
+__all__ = ["ConfigManager", "VientoConfig"]

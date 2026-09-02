@@ -37,11 +37,11 @@ draw.rectangle([(0, 0), (WIDTH, 48)], fill=(30, 41, 59))
 draw.ellipse([(18, 18), (30, 30)], fill=(239, 68, 68))   # Close
 draw.ellipse([(38, 18), (50, 30)], fill=(234, 179, 8))   # Minimize
 draw.ellipse([(58, 18), (70, 30)], fill=(34, 197, 94))   # Maximize
-draw.text((WIDTH // 2 - 220, 14), "Zephyr Mesh · Lightning AI Tesla T4 Cloud Validation", fill=TEXT_WHITE, font=font_subtitle)
+draw.text((WIDTH // 2 - 220, 14), "Viento Mesh · Lightning AI Tesla T4 Cloud Validation", fill=TEXT_WHITE, font=font_subtitle)
 
 # Main Title Card
 draw.rounded_rectangle([(30, 68), (WIDTH - 30, 150)], radius=8, fill=CARD_BG, outline=BORDER_COLOR)
-draw.text((50, 80), "⚡ ZEPHYR DISTRIBUTED INFERENCE MESH · GPU CLOUD TEST", fill=ACCENT_CYAN, font=font_title)
+draw.text((50, 80), "⚡ VIENTO DISTRIBUTED INFERENCE MESH · GPU CLOUD TEST", fill=ACCENT_CYAN, font=font_title)
 draw.text((50, 115), "Compute: Lightning AI Studio (Tesla T4 · 16GB VRAM) | Status: 🟢 ACTIVE | PyTorch: 2.8.0+cu128", fill=TEXT_MUTED, font=font_subtitle)
 
 # Metric Boxes
@@ -71,21 +71,21 @@ terminal_lines = [
     ("| N/A   36C    P8              9W /   70W |       0MiB /  15360MiB |      0%      Default |", ACCENT_GREEN),
     ("+-----------------------------------------------------------------------------------------+", TEXT_MUTED),
     ("", TEXT_WHITE),
-    ("abhinav@lightning-studio-t4:~$ python3 run_zephyr_test.py", ACCENT_CYAN),
+    ("abhinav@lightning-studio-t4:~$ python3 run_viento_test.py", ACCENT_CYAN),
     ("[*] CUDA Device Name      : Tesla T4 (Compute Capability 7.5)", TEXT_WHITE),
     ("[*] Total VRAM            : 14,911.7 MB (14.56 GB Active)", TEXT_WHITE),
     ("[+] Running GPU T4 Tensor Core FP16 Matrix Multiplication (4096 x 4096)...", ACCENT_YELLOW),
     ("[✓] T4 Matrix Multiplication: 5.68 ms/iter | Performance: 24.19 TFLOPS", ACCENT_GREEN),
     ("[+] Loading small LLM 'Qwen/Qwen2.5-0.5B-Instruct' directly onto Tesla T4...", ACCENT_YELLOW),
     ("[✓] Model Loaded in 1.67s | VRAM Allocated: 1047.9 MB", ACCENT_GREEN),
-    ("[+] Prompt: 'Explain in 3 short bullet points what Zephyr distributed edge inference mesh is'", ACCENT_CYAN),
+    ("[+] Prompt: 'Explain in 3 short bullet points what Viento distributed edge inference mesh is'", ACCENT_CYAN),
     ("[+] Generating response with Tesla T4 GPU...", TEXT_MUTED),
-    ("    • Zephyr Distributed Edge Inference Mesh connects edge computing nodes for collaborative LLM inference.", TEXT_WHITE),
+    ("    • Viento Distributed Edge Inference Mesh connects edge computing nodes for collaborative LLM inference.", TEXT_WHITE),
     ("    • Real-time zero-trust WebSocket routing with Pydantic V2 envelope protocol and auto-failover.", TEXT_WHITE),
     ("    • Globally addressable OpenAI-compatible API (/v1/chat/completions) with zero token drop backpressure.", TEXT_WHITE),
     ("[*] Benchmark: 80 Tokens Generated | 2.852 s | 28.05 tokens/sec | Peak VRAM: 1056.8 MB", ACCENT_GREEN),
     ("", TEXT_WHITE),
-    ("abhinav@lightning-studio-t4:~$ pytest zephyr/tests -q", ACCENT_CYAN),
+    ("abhinav@lightning-studio-t4:~$ pytest viento/tests -q", ACCENT_CYAN),
     ("....................................................................... [100%]", ACCENT_GREEN),
     ("============================== 71 passed in 4.11s ==============================", ACCENT_GREEN)
 ]
@@ -124,14 +124,14 @@ steps = [
         "[+] Loading 'Qwen/Qwen2.5-0.5B-Instruct' weights in FP16...",
         "[✓] Model loaded in 1.67s",
         "[✓] Initial VRAM: 1047.9 MB (Only ~7% of 16GB total)",
-        "[+] Prompt: 'Explain in 3 short bullet points what Zephyr mesh is'"
+        "[+] Prompt: 'Explain in 3 short bullet points what Viento mesh is'"
     ]),
-    ("Step 5/5: Running LLM Inference & Zephyr Test Suite...", [
-        "[+] Output: 'Zephyr connects edge computing nodes for collaborative LLM inference.'",
+    ("Step 5/5: Running LLM Inference & Viento Test Suite...", [
+        "[+] Output: 'Viento connects edge computing nodes for collaborative LLM inference.'",
         "[+] Output: 'Real-time zero-trust WebSocket routing with Pydantic V2 envelopes.'",
         "[+] Output: 'Globally addressable OpenAI API (/v1/chat/completions).'",
         "[✓] Throughput: 28.05 tokens/sec | Peak VRAM: 1056.8 MB",
-        "[✓] Zephyr SDK Tests: 71 passed in 4.11s (100% passing) ⚡"
+        "[✓] Viento SDK Tests: 71 passed in 4.11s (100% passing) ⚡"
     ])
 ]
 
@@ -145,7 +145,7 @@ for idx, (title, lines) in enumerate(steps):
         fdraw.ellipse([(14, 14), (24, 24)], fill=(239, 68, 68))
         fdraw.ellipse([(30, 14), (40, 14)], fill=(234, 179, 8))
         fdraw.ellipse([(46, 14), (56, 14)], fill=(34, 197, 94))
-        fdraw.text((70, 12), f"Zephyr Cloud GPU Node · Tesla T4 · {title}", fill=TEXT_WHITE, font=font_subtitle)
+        fdraw.text((70, 12), f"Viento Cloud GPU Node · Tesla T4 · {title}", fill=TEXT_WHITE, font=font_subtitle)
         
         # Card
         fdraw.rounded_rectangle([(25, 60), (GIF_W - 25, GIF_H - 25)], radius=8, fill=(10, 13, 18), outline=BORDER_COLOR)

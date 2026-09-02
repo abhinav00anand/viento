@@ -1,5 +1,5 @@
 """
-Connection Supervisor module for Zephyr SDK.
+Connection Supervisor module for Viento SDK.
 """
 
 from viento.connection.manager import ConnectionManager

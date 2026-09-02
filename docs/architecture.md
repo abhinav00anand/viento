@@ -1,6 +1,6 @@
-# Zephyr SDK — Architecture & Design Reference
+# Viento SDK — Architecture & Design Reference
 
-> **Version**: 0.1.0 | **Target**: Zephyr Cloud `v1` Protocol
+> **Version**: 0.1.0 | **Target**: Viento Cloud `v1` Protocol
 
 ---
 
@@ -21,15 +21,15 @@
 
 ## 1. System Overview
 
-Zephyr is a distributed AI inference mesh that bridges **local GPU nodes** (running Ollama, llama.cpp, or vLLM) with **OpenAI-compatible API consumers** via a cloud relay gateway.
+Viento is a distributed AI inference mesh that bridges **local GPU nodes** (running Ollama, llama.cpp, or vLLM) with **OpenAI-compatible API consumers** via a cloud relay gateway.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        ZEPHYR SYSTEM                                │
+│                        VIENTO SYSTEM                                │
 │                                                                     │
 │  ┌──────────────┐    WSS/TLS     ┌──────────────────────────────┐  │
 │  │  SDK Runtime │◄──────────────►│  Cloud Gateway               │  │
-│  │  (your GPU)  │                │  (zephyr.onrender.com)        │  │
+│  │  (your GPU)  │                │  (viento.onrender.com)        │  │
 │  │              │                │                              │  │
 │  │  ┌─────────┐ │                │  ┌──────────────────────────┐│  │
 │  │  │ Ollama  │ │                │  │  OpenAI-Compatible API   ││  │
@@ -77,7 +77,7 @@ viento/
 │   ├── collector.py     # CPU/GPU/RAM metrics, latency histograms, counters
 │   └── logging.py       # Structured JSON logger with secret masking
 ├── config/
-│   ├── loader.py        # ZephyrConfig, RuntimeState, ConfigManager
+│   ├── loader.py        # VientoConfig, RuntimeState, ConfigManager
 │   └── defaults.py      # DEFAULT_CONFIG, ENV_VAR_MAPPING, apply_env_overrides
 └── client/
     └── client.py        # VientoClient — high-level Python API client
@@ -130,7 +130,7 @@ Below is the complete lifecycle of a single streaming inference request:
 API Consumer                Cloud Gateway              SDK Runtime           Ollama
 ────────────               ───────────────            ─────────────         ───────
 POST /v1/chat/completions
-  Authorization: Bearer zph_tmp_xxx
+  Authorization: Bearer vnt_tmp_xxx
         │
         ▼
   [validate token SHA-256]
@@ -205,7 +205,7 @@ SDK (client)                               Cloud (server)
                                 ◄─────────
                                            {"type": "session_ready",
                                             "session_id": "sess_abc123",
-                                            "api_key": "zph_tmp_a1b2c3...",
+                                            "api_key": "vnt_tmp_a1b2c3...",
                                             "expires_at": 1720000000.0,
                                             "ttl_seconds": 3600}
                                 ◄─────────
@@ -344,7 +344,7 @@ class InferenceBackend(ABC):
 - **Latency histograms** (p50/p95/p99 via bucket counting)
 - **Request counters** (total, success, error) per model
 - **Hardware snapshots** (CPU %, RAM %, GPU VRAM via pynvml)
-- **Secret masking** — all log lines are filtered through `SecretMasker` which replaces `zph_tmp_[a-f0-9]+` patterns with `zph_tmp_***`
+- **Secret masking** — all log lines are filtered through `SecretMasker` which replaces `vnt_tmp_[a-f0-9]+` patterns with `vnt_tmp_***`
 
 Logs are emitted as structured JSON when `log_json=true`, enabling ingestion by Datadog, Loki, or Cloud Logging.
 
@@ -355,11 +355,11 @@ Logs are emitted as structured JSON when `log_json=true`, enabling ingestion by 
 | Layer | Mechanism |
 |-------|-----------|
 | Transport | TLS 1.2+ enforced by Render/Cloudflare |
-| Authentication | SHA-256 hashed tokens at rest, `zph_tmp_` prefix format validation |
+| Authentication | SHA-256 hashed tokens at rest, `vnt_tmp_` prefix format validation |
 | Authorization | 1-hour TTL, automatic expiry sweep in KeyStore |
 | Rate limiting | Sliding-window 60 RPM per token hash |
 | Body size | 4MB hard cap enforced in middleware before routing |
-| Secret logging | All log lines scrubbed for `zph_tmp_*` patterns |
+| Secret logging | All log lines scrubbed for `vnt_tmp_*` patterns |
 | Prompt isolation | Each job runs in a fresh Ollama context (no session state leak) |
 
 ---
@@ -368,20 +368,20 @@ Logs are emitted as structured JSON when `log_json=true`, enabling ingestion by 
 
 | Key | Env Var | Default | Description |
 |-----|---------|---------|-------------|
-| `server_url` | `ZEPHYR_SERVER_URL` | `wss://zephyr.onrender.com/ws/runtime` | Cloud WSS gateway URL |
-| `http_url` | `ZEPHYR_HTTP_URL` | `https://zephyr.onrender.com` | Cloud HTTP base URL |
-| `ollama_url` | `ZEPHYR_OLLAMA_URL` | `http://localhost:11434` | Local Ollama endpoint |
-| `node_name` | `ZEPHYR_NODE_NAME` | `zephyr-node` | Node identifier in Cloud |
-| `max_concurrency` | `ZEPHYR_MAX_CONCURRENCY` | `1` | Max simultaneous jobs |
-| `heartbeat_interval` | `ZEPHYR_HEARTBEAT_INTERVAL` | `15` | Seconds between heartbeats |
-| `heartbeat_deadline` | `ZEPHYR_HEARTBEAT_DEADLINE` | `45` | Server eviction timeout |
-| `job_timeout` | `ZEPHYR_JOB_TIMEOUT` | `120` | Per-job deadline (seconds) |
-| `max_queue_depth` | `ZEPHYR_MAX_QUEUE_DEPTH` | `50` | Max queued jobs per runtime |
-| `token_ttl` | `ZEPHYR_TOKEN_TTL` | `3600` | API key lifetime (seconds) |
-| `log_level` | `ZEPHYR_LOG_LEVEL` | `INFO` | Python logging level |
-| `log_json` | `ZEPHYR_LOG_JSON` | `false` | Emit structured JSON logs |
-| `reconnect_base_delay` | `ZEPHYR_RECONNECT_BASE_DELAY` | `1.0` | First backoff delay (s) |
-| `reconnect_max_delay` | `ZEPHYR_RECONNECT_MAX_DELAY` | `30.0` | Maximum backoff delay (s) |
+| `server_url` | `VIENTO_SERVER_URL` | `wss://viento.onrender.com/ws/runtime` | Cloud WSS gateway URL |
+| `http_url` | `VIENTO_HTTP_URL` | `https://viento.onrender.com` | Cloud HTTP base URL |
+| `ollama_url` | `VIENTO_OLLAMA_URL` | `http://localhost:11434` | Local Ollama endpoint |
+| `node_name` | `VIENTO_NODE_NAME` | `viento-node` | Node identifier in Cloud |
+| `max_concurrency` | `VIENTO_MAX_CONCURRENCY` | `1` | Max simultaneous jobs |
+| `heartbeat_interval` | `VIENTO_HEARTBEAT_INTERVAL` | `15` | Seconds between heartbeats |
+| `heartbeat_deadline` | `VIENTO_HEARTBEAT_DEADLINE` | `45` | Server eviction timeout |
+| `job_timeout` | `VIENTO_JOB_TIMEOUT` | `120` | Per-job deadline (seconds) |
+| `max_queue_depth` | `VIENTO_MAX_QUEUE_DEPTH` | `50` | Max queued jobs per runtime |
+| `token_ttl` | `VIENTO_TOKEN_TTL` | `3600` | API key lifetime (seconds) |
+| `log_level` | `VIENTO_LOG_LEVEL` | `INFO` | Python logging level |
+| `log_json` | `VIENTO_LOG_JSON` | `false` | Emit structured JSON logs |
+| `reconnect_base_delay` | `VIENTO_RECONNECT_BASE_DELAY` | `1.0` | First backoff delay (s) |
+| `reconnect_max_delay` | `VIENTO_RECONNECT_MAX_DELAY` | `30.0` | Maximum backoff delay (s) |
 
 Set via `~/.viento/config.toml` or environment variables (env vars take precedence).
 
@@ -393,11 +393,11 @@ Before running `viento run` in production:
 
 - [ ] Ollama is installed and `ollama serve` is running (`viento doctor` to verify)
 - [ ] At least one model is downloaded: `viento pull llama3:latest`
-- [ ] `viento config set server_url wss://zephyr.onrender.com/ws/runtime`
-- [ ] `viento run` executed — note the `zph_tmp_...` key from the handshake panel
-- [ ] API consumers configured with `Authorization: Bearer zph_tmp_...`
+- [ ] `viento config set server_url wss://viento.onrender.com/ws/runtime`
+- [ ] `viento run` executed — note the `vnt_tmp_...` key from the handshake panel
+- [ ] API consumers configured with `Authorization: Bearer vnt_tmp_...`
 - [ ] Key TTL monitored — re-run `viento run` before 1-hour expiry or build key refresh into consumer
-- [ ] `ZEPHYR_LOG_JSON=true` if shipping logs to an aggregation service
+- [ ] `VIENTO_LOG_JSON=true` if shipping logs to an aggregation service
 
 ---
 

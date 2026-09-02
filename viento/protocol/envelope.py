@@ -1,5 +1,5 @@
 """
-Canonical Wire Protocol Envelope (Version 1.0) for Zephyr SDK.
+Canonical Wire Protocol Envelope (Version 1.0) for Viento SDK.
 Maintains byte-for-byte schema parity with Cloud Control Plane protocol definitions.
 """
 

@@ -21,7 +21,7 @@ concurrency_levels = [1, 2, 4, 8, 16]
 benchmark_results = []
 
 print("=" * 65)
-print("  ⚡ RUNNING ZEPHYR ADVANCED CONCURRENCY & STRESS BENCHMARK ⚡")
+print("  ⚡ RUNNING VIENTO ADVANCED CONCURRENCY & STRESS BENCHMARK ⚡")
 print("=" * 65)
 
 for c in concurrency_levels:
@@ -60,7 +60,7 @@ for c in concurrency_levels:
 # Save JSON Report
 report_data = {
     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-    "suite": "Zephyr Concurrency Stress & Zero-Token-Drop Validation",
+    "suite": "Viento Concurrency Stress & Zero-Token-Drop Validation",
     "total_tests_executed": 59,
     "tests_passed": 59,
     "tests_failed": 0,
@@ -74,10 +74,10 @@ for path in ["test_results/benchmark_report.json", "SDK/test_results/benchmark_r
 print("==> Saved JSON reports to test_results/benchmark_report.json")
 
 # Generate Markdown Report
-md_report = f"""# 📊 Zephyr Concurrency & Backpressure Stress Test Report
+md_report = f"""# 📊 Viento Concurrency & Backpressure Stress Test Report
 
 **Execution Timestamp**: `{report_data['timestamp']}`  
-**Test Suite**: `Zephyr Concurrency Stress & Zero-Token-Drop Validation`  
+**Test Suite**: `Viento Concurrency Stress & Zero-Token-Drop Validation`  
 **Overall Status**: 🟢 **100% PASSED (59 of 59 Tests)**
 
 ---
@@ -131,7 +131,7 @@ draw.rectangle([(0, 0), (W, 45)], fill=(30, 41, 59))
 draw.ellipse([(16, 16), (28, 28)], fill=(239, 68, 68))
 draw.ellipse([(36, 16), (48, 28)], fill=(234, 179, 8))
 draw.ellipse([(56, 16), (68, 28)], fill=(34, 197, 94))
-draw.text((85, 12), "Zephyr Mesh · Concurrency Stress & Throughput Benchmark Suite", fill=(240, 246, 252), font=font_subtitle)
+draw.text((85, 12), "Viento Mesh · Concurrency Stress & Throughput Benchmark Suite", fill=(240, 246, 252), font=font_subtitle)
 
 # Summary Header Card
 draw.rounded_rectangle([(30, 65), (W - 30, 150)], radius=8, fill=(22, 27, 34), outline=(48, 54, 61))

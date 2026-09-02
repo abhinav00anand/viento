@@ -1,12 +1,12 @@
 <div align="center">
 
 ```
-  ███████╗███████╗██████╗ ██╗  ██╗██╗   ██╗██████╗ 
-  ╚══███╔╝██╔════╝██╔══██╗██║  ██║╚██╗ ██╔╝██╔══██╗
-    ███╔╝ █████╗  ██████╔╝███████║ ╚████╔╝ ██████╔╝
-   ███╔╝  ██╔══╝  ██╔═══╝ ██╔══██║  ╚██╔╝  ██╔══██╗
-  ███████╗███████╗██║     ██║  ██║   ██║   ██║  ██║
-  ╚══════╝╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
+  ██╗   ██╗██╗███████╗███╗   ██╗████████╗ ██████╗ 
+  ██║   ██║██║██╔════╝████╗  ██║╚══██╔══╝██╔═══██╗
+  ██║   ██║██║█████╗  ██╔██╗ ██║   ██║   ██║   ██║
+  ╚██╗ ██╔╝██║██╔══╝  ██║╚██╗██║   ██║   ██║   ██║
+   ╚████╔╝ ██║███████╗██║ ╚████║   ██║   ╚██████╔╝
+    ╚═══╝  ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ 
 ```
 
 ### ⚡ Ultra-Lightweight Distributed Edge Inference Mesh ⚡
@@ -20,7 +20,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blueviolet?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <b>Zephyr</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e SDK/</code> • CLI: <code>viento</code>).<br>
+  <b>Viento</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e SDK/</code> • CLI: <code>viento</code>).<br>
   Transform heterogeneous local workstations, cloud GPUs, and edge rigs into a unified, high-throughput, OpenAI-compatible AI cloud.
 </p>
 
@@ -36,7 +36,7 @@
 <summary><b>1. What is this?</b></summary>
 <br>
 
-**Zephyr** is an ultra-lightweight, high-performance distributed inference mesh that networks diverse machines—from developer laptops and homelabs to spot cloud GPUs—into a single, virtualized AI compute cluster. It exposes a drop-in **OpenAI-compatible chat completion endpoint** (`POST https://viento.onrender.com/v1/chat/completions`) and SDK base URL (`https://viento.onrender.com/v1`) backed by the **Viento** edge agent, which connects local inference engines (Ollama, vLLM, llama.cpp, PyTorch) via persistent, reverse asynchronous WebSocket tunnels.
+**Viento** is an ultra-lightweight, high-performance distributed inference mesh that networks diverse machines—from developer laptops and homelabs to spot cloud GPUs—into a single, virtualized AI compute cluster. It exposes a drop-in **OpenAI-compatible chat completion endpoint** (`POST https://viento.onrender.com/v1/chat/completions`) and SDK base URL (`https://viento.onrender.com/v1`) backed by the **Viento** edge agent, which connects local inference engines (Ollama, vLLM, llama.cpp, PyTorch) via persistent, reverse asynchronous WebSocket tunnels.
 </details>
 
 <details open>
@@ -56,7 +56,7 @@
 - **💸 Zero Cloud GPU Lock-In**: Stop paying 24/7 pricing for idle cloud GPU instances. Turn on compute only when you need it, wherever you have it.
 - **🪶 Ultra-Lightweight Footprint**: The Viento agent consumes **under 25 MB RAM** and virtually 0% idle CPU. No heavy Docker engines required, no kernel modules, just pure asynchronous Python (`asyncio`).
 - **🛡️ Instant Firewall Penetration (Reverse WSS Tunnels)**: Workers establish outbound secure WebSocket tunnels to `wss://viento.onrender.com/ws/runtime`. **No public IP, no open ports, and no NAT punch-through required.**
-- **⚡ Instant Socket-Level Cancellation**: If a user cancels a query mid-stream, Zephyr aborts the local engine's generation socket in `< 2 milliseconds`, freeing your VRAM immediately instead of wasting GPU compute.
+- **⚡ Instant Socket-Level Cancellation**: If a user cancels a query mid-stream, Viento aborts the local engine's generation socket in `< 2 milliseconds`, freeing your VRAM immediately instead of wasting GPU compute.
 - **📦 Zero Token Drop Guarantee**: Invariant-tested backpressure queues ensure 100% of tokens arrive to the client intact even during heavy parallel traffic bursts.
 </details>
 
@@ -74,7 +74,7 @@ pip install -e SDK/
 ollama run llama3:latest
 
 # 3. Connect your node to the live mesh
-export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
 viento run --server wss://viento.onrender.com/ws/runtime
 ```
 
@@ -97,18 +97,18 @@ Once your node connects, it registers its available models and outputs an authen
 
 ## 🌌 Core Philosophy: Featherweight & Blazing Fast
 
-Traditional distributed AI frameworks require heavyweight distributed runtimes, Kubernetes operators, and static ingress controllers. Zephyr discards this bloat in favor of minimal, hyper-focused primitives:
+Traditional distributed AI frameworks require heavyweight distributed runtimes, Kubernetes operators, and static ingress controllers. Viento discards this bloat in favor of minimal, hyper-focused primitives:
 
 - **Asynchronous Reverse Multiplexing**: Nodes maintain persistent HTTP/2 and WebSocket connections to the cloud gateway. Requests are dispatched downstream as lightweight binary/JSON frames and streamed back token-by-token over Server-Sent Events (SSE).
 - **Sub-Millisecond Stream Dispatch**: Routing decisions and capacity checks occur in memory via `asyncio.Semaphore` guards, introducing negligible latency (< 1ms overhead).
-- **Ephemeral Session Security**: Workers receive temporary cryptographically scoped session keys (`zph_tmp_...`) with automatic TTL expiry, isolating clients without heavyweight key infrastructures.
+- **Ephemeral Session Security**: Workers receive temporary cryptographically scoped session keys (`vnt_tmp_...`) with automatic TTL expiry, isolating clients without heavyweight key infrastructures.
 - **Hardware Agnostic**: Run FP16 weights on NVIDIA GPUs, quantized GGUFs on Apple Silicon with Metal, or CPU inference on edge devices seamlessly.
 
 ---
 
 ## 🏛️ System Architecture
 
-Zephyr operates on a dual-plane architecture: a **Cloud Control Plane Gateway** hosted at `viento.onrender.com`, and distributed **Viento Edge Runtime Nodes**.
+Viento operates on a dual-plane architecture: a **Cloud Control Plane Gateway** hosted at `viento.onrender.com`, and distributed **Viento Edge Runtime Nodes**.
 
 ```mermaid
 flowchart TD
@@ -118,7 +118,7 @@ flowchart TD
         C3["LangChain / Agents"]
     end
 
-    subgraph Gateway["Zephyr Cloud Gateway (https://viento.onrender.com)"]
+    subgraph Gateway["Viento Cloud Gateway (https://viento.onrender.com)"]
         GW_API["REST API Router (/v1/chat/completions)"]
         DISP["Multi-Tier Capacity Dispatcher"]
         REG["Active Session & Model Registry"]
@@ -170,7 +170,7 @@ All communication over the WebSocket mesh tunnel utilizes strictly validated **P
   "timestamp": 1725301824.51,
   "job_id": "job_a93f1208",
   "request_id": "req_55b0a3f1",
-  "session_id": "zph_sess_7a3d12c8",
+  "session_id": "vnt_sess_7a3d12c8",
   "payload": {
     "model": "llama3:latest",
     "messages": [{"role": "user", "content": "Explain gravity."}],
@@ -225,7 +225,7 @@ Each Viento node protects itself from resource exhaustion using an internal mult
 
 ## ⚡ Cloud GPU Validation: NVIDIA Tesla T4
 
-To prove Zephyr's cross-environment capability, the full system was launched and evaluated on a live cloud instance featuring an **NVIDIA Tesla T4 GPU (16 GB VRAM)** on Lightning AI:
+To prove Viento's cross-environment capability, the full system was launched and evaluated on a live cloud instance featuring an **NVIDIA Tesla T4 GPU (16 GB VRAM)** on Lightning AI:
 
 ```
 +-----------------------------------------------------------------------------------------+
@@ -261,7 +261,7 @@ To prove Zephyr's cross-environment capability, the full system was launched and
 
 ## 📊 Concurrency Stress & Throughput Benchmarks
 
-We subjected Zephyr's scheduling core to intensive burst stress tests across varying concurrency levels to validate backpressure enforcement and streaming fidelity:
+We subjected Viento's scheduling core to intensive burst stress tests across varying concurrency levels to validate backpressure enforcement and streaming fidelity:
 
 | Concurrency Level | Total Requests | Total Tokens | Duration | Throughput | p50 Latency | p95 Latency | Dropped Tokens | Status |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -283,7 +283,7 @@ We subjected Zephyr's scheduling core to intensive burst stress tests across var
 
 ## 🎯 Supported Inference Backends
 
-Zephyr abstracts backend engines through a unified interface (`InferenceBackend`), allowing you to mix and match hardware transparently:
+Viento abstracts backend engines through a unified interface (`InferenceBackend`), allowing you to mix and match hardware transparently:
 
 ```
                        ┌──────────────────────┐
@@ -307,7 +307,7 @@ Zephyr abstracts backend engines through a unified interface (`InferenceBackend`
 
 ---
 
-## 🚀 How to Run Zephyr
+## 🚀 How to Run Viento
 
 For full step-by-step instructions on running each component, connecting nodes, and deploying on cloud GPUs, read the dedicated guide:
 
@@ -323,7 +323,7 @@ pip install -e SDK/
 ollama run llama3:latest
 
 # 3. Connect your node to the live production mesh
-export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
 viento run --server wss://viento.onrender.com/ws/runtime
 
 # 4. Query the mesh via OpenAI SDK
@@ -334,7 +334,7 @@ curl https://viento.onrender.com/v1/models
 
 ## 🛡️ Reliability & Test Matrix
 
-Zephyr includes an exhaustive automated test suite covering protocol invariants, network drops, session recovery, queue overflows, and concurrency stress:
+Viento includes an exhaustive automated test suite covering protocol invariants, network drops, session recovery, queue overflows, and concurrency stress:
 
 - **79 of 79 Unit & Stress Tests Passing (100%)**:
   - `test_backends.py`: Backend adapter contracts & execution handles (7 passed)
@@ -368,5 +368,5 @@ pytest SDK/tests -v
 
 ## 📄 License
 
-Zephyr is licensed under the [Apache 2.0 License](LICENSE).
+Viento is licensed under the [Apache 2.0 License](LICENSE).
 Built with ❤️ for decentralized, accessible, and ultra-lightweight AI computing.

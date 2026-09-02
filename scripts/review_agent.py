@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Antigravity PR Review & Deep Check Agent for Zephyr SDK.
+Antigravity PR Review & Deep Check Agent for Viento SDK.
 
 This script runs an autonomous code review powered by the Google Antigravity SDK
-(or Google Gemini API) specifically customized for the Zephyr SDK (viento).
+(or Google Gemini API) specifically customized for the Viento SDK (viento).
 Performs full analysis with deep architectural checks, highlights what is wrong,
 specifies what is needed with concrete code suggestions, and posts comments
 directly to GitHub Pull Requests.
@@ -18,13 +18,13 @@ import sys
 from typing import Optional, Dict, Any
 
 
-ZEPHYR_REVIEW_INSTRUCTIONS = """
+VIENTO_REVIEW_INSTRUCTIONS = """
 You are Antigravity, an expert software engineering and architectural review agent
-specializing in the Zephyr Distributed Inference Mesh SDK (Python package: `viento`).
+specializing in the Viento Distributed Inference Mesh SDK (Python package: `viento`).
 
 Your mission is to perform a rigorous code review and deep architectural check of the provided Git pull request.
 
-## Zephyr SDK Core Invariants & Architectural Rules:
+## Viento SDK Core Invariants & Architectural Rules:
 1. **Canonical Envelope Protocol (V1.0)**:
    - Every WebSocket frame must strictly serialize/deserialize to Pydantic V2 `ProtocolEnvelope`.
    - `extra="forbid"` must always be maintained.
@@ -38,7 +38,7 @@ Your mission is to perform a rigorous code review and deep architectural check o
    - Never silently discard or drop generated tokens under heavy load.
 4. **Telemetry & Zero-Trust Security**:
    - Strictly use `SecretMasker` from `viento.telemetry.logging` for masking secrets. Never log raw API tokens.
-   - Use standard logging via `logging.getLogger("zephyr.<module>")` — NEVER use raw `print()` statements in production code.
+   - Use standard logging via `logging.getLogger("viento.<module>")` — NEVER use raw `print()` statements in production code.
 5. **Code Style & Quality**:
    - Follow PEP 8 and `black` formatting (100-character line limit) and `ruff` rules.
    - All public functions and classes must have complete type annotations and Google-style docstrings.
@@ -248,7 +248,7 @@ async def run_gemini_fallback(prompt: str, system_instructions: str, api_key: st
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Antigravity PR Review & Deep Check for Zephyr SDK")
+    parser = argparse.ArgumentParser(description="Antigravity PR Review & Deep Check for Viento SDK")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""), help="GitHub repo (owner/repo)")
     parser.add_argument("--pr", default=os.environ.get("GITHUB_PR_NUMBER") or os.environ.get("PULL_REQUEST_NUMBER", ""), help="Pull Request number")
     parser.add_argument("--base", default="main", help="Base branch (default: main)")
@@ -286,13 +286,13 @@ async def main() -> None:
         sys.exit(0)
 
     # Construct instructions & prompt
-    system_instructions = ZEPHYR_REVIEW_INSTRUCTIONS
+    system_instructions = VIENTO_REVIEW_INSTRUCTIONS
     if args.deep:
         system_instructions += DEEP_CHECK_ADDENDUM
     if args.score:
         system_instructions += SCORE_INSTRUCTIONS
 
-    user_prompt = f"Please perform a full review and deep check of the following PR code diff for Zephyr SDK:\n\n```diff\n{diff_text}\n```\n"
+    user_prompt = f"Please perform a full review and deep check of the following PR code diff for Viento SDK:\n\n```diff\n{diff_text}\n```\n"
     if args.additional_context:
         user_prompt += f"\n\nAdditional user instructions:\n{args.additional_context}\n"
 

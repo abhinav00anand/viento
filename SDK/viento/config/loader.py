@@ -1,5 +1,5 @@
 """
-Configuration Loader and Directory Manager for Zephyr SDK.
+Configuration Loader and Directory Manager for Viento SDK.
 
 Manages ~/.viento/config.toml, ~/.viento/runtime.json, and log directories.
 Secrets (like bootstrap_key) are read dynamically from environment variables
@@ -20,7 +20,7 @@ except ImportError:
     import socket
 import uuid
 
-logger = logging.getLogger("zephyr.config")
+logger = logging.getLogger("viento.config")
 
 
 def get_default_node_name() -> str:
@@ -30,14 +30,14 @@ def get_default_node_name() -> str:
         host_clean = "".join(c for c in host if c.isalnum() or c in ("-", "_")).lower()
         if host_clean and host_clean not in ("localhost", "127.0.0.1"):
             # Include a 4-char random hash to distinguish multiple colab/docker instances on same host type
-            return f"zephyr-node-{host_clean[:10]}-{uuid.uuid4().hex[:4]}"
+            return f"viento-node-{host_clean[:10]}-{uuid.uuid4().hex[:4]}"
     except Exception:
         pass
-    return f"zephyr-node-{uuid.uuid4().hex[:6]}"
+    return f"viento-node-{uuid.uuid4().hex[:6]}"
 
 
 @dataclass
-class ZephyrConfig:
+class VientoConfig:
     server_url: str = "wss://viento.onrender.com/ws/runtime"
     cloud_api_url: str = "https://viento.onrender.com"
     http_url: str = "https://viento.onrender.com"
@@ -60,7 +60,7 @@ class ZephyrConfig:
     reconnect_jitter_factor: float = 0.2
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ZephyrConfig":
+    def from_dict(cls, data: Dict[str, Any]) -> "VientoConfig":
         valid_keys = {f for f in cls.__dataclass_fields__}
         filtered = {k: v for k, v in data.items() if k in valid_keys}
         return cls(**filtered)
@@ -99,8 +99,8 @@ class RuntimeState:
 class ConfigManager:
     """Manages reading and persisting configuration to ~/.viento/ directory."""
 
-    def __init__(self, base_dir: Optional[Path] = None, zephyr_dir: Optional[Path] = None):
-        self.base_dir = base_dir or zephyr_dir or (Path.home() / ".zephyr")
+    def __init__(self, base_dir: Optional[Path] = None, viento_dir: Optional[Path] = None):
+        self.base_dir = base_dir or viento_dir or (Path.home() / ".viento")
         self.config_path = self.base_dir / "config.toml"
         self.runtime_state_path = self.base_dir / "runtime.json"
         self.log_dir = self.base_dir / "logs"
@@ -110,22 +110,22 @@ class ConfigManager:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_config(self) -> ZephyrConfig:
+    def load_config(self) -> VientoConfig:
         """Load config from disk if exists, otherwise return defaults."""
         if not self.config_path.exists():
-            config = ZephyrConfig()
+            config = VientoConfig()
             self.save_config(config)
             return config
 
         try:
             with open(self.config_path, "rb") as f:
                 data = tomllib.load(f)
-            return ZephyrConfig.from_dict(data)
+            return VientoConfig.from_dict(data)
         except Exception as exc:
             logger.error("Failed to parse %s: %s. Using defaults.", self.config_path, exc)
-            return ZephyrConfig()
+            return VientoConfig()
 
-    def save_config(self, config: ZephyrConfig) -> None:
+    def save_config(self, config: VientoConfig) -> None:
         """Save configuration to ~/.viento/config.toml safely without secrets."""
         try:
             d = config.to_dict()
@@ -168,7 +168,7 @@ class ConfigManager:
 
     def get_bootstrap_key(self) -> str:
         """Get bootstrap key strictly from environment variable."""
-        return os.getenv("ZEPHYR_BOOTSTRAP_KEY", "")
+        return os.getenv("VIENTO_BOOTSTRAP_KEY", "")
 
 
 config_manager = ConfigManager()

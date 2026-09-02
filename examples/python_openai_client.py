@@ -1,7 +1,7 @@
-"""Production Python example demonstrating standard OpenAI SDK integration with Zephyr Cloud.
+"""Production Python example demonstrating standard OpenAI SDK integration with Viento Cloud.
 
 Usage:
-    python python_openai_client.py --key zph_tmp_... --server https://zephyr.onrender.com
+    python python_openai_client.py --key vnt_tmp_... --server https://viento.onrender.com
 """
 
 import argparse
@@ -10,15 +10,15 @@ from openai import OpenAI
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Zephyr OpenAI Client Example")
-    parser.add_argument("--key", required=True, help="1-hour temporary API key (zph_tmp_...)")
-    parser.add_argument("--server", default="https://zephyr.onrender.com", help="Zephyr server base URL")
-    parser.add_argument("--model", default="llama3.1:8b", help="Model name advertised by your Zephyr node")
+    parser = argparse.ArgumentParser(description="Viento OpenAI Client Example")
+    parser.add_argument("--key", required=True, help="1-hour temporary API key (vnt_tmp_...)")
+    parser.add_argument("--server", default="https://viento.onrender.com", help="Viento server base URL")
+    parser.add_argument("--model", default="llama3.1:8b", help="Model name advertised by your Viento node")
     args = parser.parse_args()
 
-    print(f"Connecting to Zephyr Cloud at {args.server}...")
+    print(f"Connecting to Viento Cloud at {args.server}...")
     
-    # Initialize standard OpenAI client pointing at Zephyr endpoint
+    # Initialize standard OpenAI client pointing at Viento endpoint
     client = OpenAI(
         base_url=f"{args.server.rstrip('/')}/v1",
         api_key=args.key,

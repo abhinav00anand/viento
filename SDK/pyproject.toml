@@ -8,11 +8,11 @@ version = "0.3.1"
 description = "Viento: Distributed AI inference runtime SDK — connect your local LLMs to the cloud mesh"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Zephyr Cloud Team", email = "indrohelpdesk@gmail.com" }]
-maintainers = [{ name = "Zephyr Cloud Team", email = "indrohelpdesk@gmail.com" }]
+authors = [{ name = "Viento Cloud Team", email = "indrohelpdesk@gmail.com" }]
+maintainers = [{ name = "Viento Cloud Team", email = "indrohelpdesk@gmail.com" }]
 keywords = [
     "llm", "ai", "inference", "ollama", "distributed", "runtime",
-    "zephyr", "edge-computing", "openai-compatible", "vllm", "llama-cpp",
+    "viento", "edge-computing", "openai-compatible", "vllm", "llama-cpp",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

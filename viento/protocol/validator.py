@@ -122,7 +122,7 @@ class SequenceTracker:
 
 
 class ProtocolValidator:
-    """High-performance serializer, deserializer, and validator for Zephyr Protocol Envelopes."""
+    """High-performance serializer, deserializer, and validator for Viento Protocol Envelopes."""
 
     @staticmethod
     def serialize(envelope: ProtocolEnvelope) -> str:

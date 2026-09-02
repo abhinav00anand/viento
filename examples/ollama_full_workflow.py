@@ -1,5 +1,5 @@
 """
-Zephyr SDK — Full Workflow Example with Ollama.
+Viento SDK — Full Workflow Example with Ollama.
 
 Demonstrates a complete production workflow using the VientoClient:
   - Streaming chat completions
@@ -10,7 +10,7 @@ Demonstrates a complete production workflow using the VientoClient:
 
 Prerequisites:
     pip install viento
-    export ZEPHYR_API_KEY="zph_tmp_..."   # obtained from `viento run`
+    export VIENTO_API_KEY="vnt_tmp_..."   # obtained from `viento run`
 
 Usage:
     python ollama_full_workflow.py
@@ -28,15 +28,15 @@ import httpx
 # Client Configuration
 # ---------------------------------------------------------------------------
 
-BASE_URL = os.environ.get("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")
-API_KEY = os.environ.get("ZEPHYR_API_KEY", "")
+BASE_URL = os.environ.get("VIENTO_BASE_URL", "https://viento.onrender.com")
+API_KEY = os.environ.get("VIENTO_API_KEY", "")
 
 if not API_KEY:
     print(
-        "ERROR: ZEPHYR_API_KEY environment variable is not set.\n"
+        "ERROR: VIENTO_API_KEY environment variable is not set.\n"
         "Run `viento run` on your local machine and copy the temporary API key printed\n"
         "in the handshake panel. Then set:\n\n"
-        "    export ZEPHYR_API_KEY='zph_tmp_...'\n",
+        "    export VIENTO_API_KEY='vnt_tmp_...'\n",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -75,7 +75,7 @@ def _handle_error(resp: httpx.Response, context: str) -> None:
         print("  Run `viento models` to see available models, or `viento pull <model>` to download one.")
     elif status == 503:
         print(f"[{context}] No runtime available (503): {detail}")
-        print("  Make sure your local Zephyr node is running with `viento run`.")
+        print("  Make sure your local Viento node is running with `viento run`.")
     else:
         print(f"[{context}] HTTP {status}: {detail}")
 
@@ -223,7 +223,7 @@ def check_runtime_status() -> None:
 
 def main() -> None:
     print("=" * 66)
-    print("  Zephyr + Ollama Full Workflow Example")
+    print("  Viento + Ollama Full Workflow Example")
     print(f"  Server: {BASE_URL}")
     print("=" * 66)
 

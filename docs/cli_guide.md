@@ -1,6 +1,6 @@
-# Zephyr CLI Complete User Guide & Reference
+# Viento CLI Complete User Guide & Reference
 
-The `zephyr` command-line interface provides comprehensive control over local node execution, model registration, diagnostics, configuration, and job scheduling for the Zephyr AI mesh.
+The `viento` command-line interface provides comprehensive control over local node execution, model registration, diagnostics, configuration, and job scheduling for the Viento AI mesh.
 
 ---
 
@@ -22,7 +22,7 @@ The `zephyr` command-line interface provides comprehensive control over local no
 
 ### 1. `viento run`
 
-Boots the local runtime node. Auto-discovers locally installed models via Ollama (`http://localhost:11434/api/tags`), opens an outbound WebSocket connection to the Zephyr Cloud Gateway, sends a handshake frame, and receives a temporary 1-hour session API key (`zph_tmp_...`).
+Boots the local runtime node. Auto-discovers locally installed models via Ollama (`http://localhost:11434/api/tags`), opens an outbound WebSocket connection to the Viento Cloud Gateway, sends a handshake frame, and receives a temporary 1-hour session API key (`vnt_tmp_...`).
 
 #### Usage:
 ```bash
@@ -30,7 +30,7 @@ viento run [OPTIONS]
 ```
 
 #### Options:
-- `-s, --server TEXT`: Override default WSS gateway URL (`wss://zephyr.onrender.com/ws/runtime`).
+- `-s, --server TEXT`: Override default WSS gateway URL (`wss://viento.onrender.com/ws/runtime`).
 - `-o, --ollama-url TEXT`: Override default Ollama API endpoint (`http://localhost:11434`).
 - `-c, --concurrency INTEGER`: Set maximum concurrent inference jobs (default: `1`).
 
@@ -69,7 +69,7 @@ Performs an automated environment diagnostic scan:
 1. **Ollama Reachability**: Queries `http://localhost:11434/api/tags` and reports model count.
 2. **CPU & RAM**: Measures active CPU load % and available system memory.
 3. **GPU Diagnostics**: Detects NVIDIA GPUs, VRAM utilization, and PyNVML driver state.
-4. **Cloud Network**: Tests HTTP GET reachability against Zephyr Cloud `/health`.
+4. **Cloud Network**: Tests HTTP GET reachability against Viento Cloud `/health`.
 
 #### Usage:
 ```bash
@@ -108,7 +108,7 @@ viento config get max_concurrency
 ##### Set configuration value:
 ```bash
 viento config set max_concurrency 2
-viento config set server_url wss://gateway.zephyr.cloud/ws/runtime
+viento config set server_url wss://gateway.viento.cloud/ws/runtime
 ```
 
 ---

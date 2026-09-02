@@ -21,7 +21,7 @@ We will acknowledge your report within **48 hours** and aim to release a fix wit
 
 ## Security Design Principles
 
-1. **No secrets on disk:** API keys (`zph_tmp_...`) are held only in process memory and stripped from all disk writes.
+1. **No secrets on disk:** API keys (`vnt_tmp_...`) are held only in process memory and stripped from all disk writes.
 2. **TLS-only connections:** All cloud gateway connections use `wss://` (WebSocket Secure). Plaintext `ws://` is only permitted for localhost testing.
 3. **Secret masking in logs:** The `SecretMasker` automatically redacts API key patterns from all structured log output.
 4. **Sequence validation:** `SequenceTracker` detects replay attacks and out-of-order frames on both connection directions.

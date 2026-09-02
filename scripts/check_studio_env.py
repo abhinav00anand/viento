@@ -5,7 +5,7 @@ auth = Auth()
 auth.save(user_id="a3220a59-f43e-4d4d-843d-08b38bb8bbea", auth_token="sk-lit-698f2cfc-3fe8-433d-98da-b03aa08d5037")
 
 studio = Studio(
-    name="zephyr-t4-node",
+    name="viento-t4-node",
     teamspace="financial-llm-training-project",
     user="abhinav337463"
 )

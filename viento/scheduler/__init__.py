@@ -1,5 +1,5 @@
 """
-Job Scheduler module for Zephyr SDK.
+Job Scheduler module for Viento SDK.
 """
 
 from viento.scheduler.scheduler import Job, JobScheduler, JobStatus

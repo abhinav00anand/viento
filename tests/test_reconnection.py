@@ -6,7 +6,7 @@ import pytest
 import websockets
 
 import viento.connection.manager as connection_manager_module
-from viento.config.loader import ZephyrConfig
+from viento.config.loader import VientoConfig
 from viento.connection.manager import ConnectionManager
 from viento.protocol.envelope import FrameType, ModelInfo, ProtocolEnvelope
 
@@ -71,7 +71,7 @@ class FakeWebSocketContext:
 
 
 def _config():
-    return ZephyrConfig(
+    return VientoConfig(
         node_name="test-node",
         bootstrap_key="bootstrap-secret",
         max_concurrency=2,
@@ -108,7 +108,7 @@ def _frame(frame_type, session_id, sequence, payload):
     ).to_json()
 
 
-def _handshake_frames(session_id, *, start_sequence=0, api_key="zph_tmp_test"):
+def _handshake_frames(session_id, *, start_sequence=0, api_key="vnt_tmp_test"):
     return [
         _frame(
             FrameType.WELCOME,

@@ -12,8 +12,8 @@ class SecretMasker:
     """Regex-based secret masker for sensitive API keys, tokens, and credentials."""
 
     PATTERNS = [
-        # Zephyr temporary and live keys
-        (re.compile(r"zph_tmp_[A-Za-z0-9_\-]+"), lambda m: "zph_tmp_****"),
+        # Viento temporary and live keys
+        (re.compile(r"vnt_tmp_[A-Za-z0-9_\-]+"), lambda m: "vnt_tmp_****"),
         (re.compile(r"zph_live_[A-Za-z0-9_\-]+"), lambda m: "zph_live_****"),
         # OpenAI style API keys
         (re.compile(r"sk-[A-Za-z0-9_\-]{16,}"), lambda m: "sk-****"),
@@ -133,12 +133,12 @@ class ConsoleFormatter(logging.Formatter):
         return formatted
 
 
-class ZephyrLogger:
+class VientoLogger:
     """Helper wrapper for configured loggers."""
 
     @staticmethod
     def get_logger(
-        name: str = "zephyr",
+        name: str = "viento",
         log_level: str = "INFO",
         json_output: bool = True,
         service_name: str = "viento",
@@ -178,9 +178,9 @@ class ZephyrLogger:
 
 
 def get_logger(
-    name: str = "zephyr",
+    name: str = "viento",
     log_level: str = "INFO",
     json_output: bool = True,
 ) -> logging.Logger:
-    """Convenience alias function to get a ZephyrLogger."""
-    return ZephyrLogger.get_logger(name=name, log_level=log_level, json_output=json_output)
+    """Convenience alias function to get a VientoLogger."""
+    return VientoLogger.get_logger(name=name, log_level=log_level, json_output=json_output)

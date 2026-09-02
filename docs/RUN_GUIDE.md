@@ -1,6 +1,6 @@
-# 📖 Zephyr Mesh: Comprehensive Operator & Execution Guide
+# 📖 Viento Mesh: Comprehensive Operator & Execution Guide
 
-This document provides complete, step-by-step instructions for installing, configuring, running, and testing the **Zephyr Distributed Edge Inference Mesh**.
+This document provides complete, step-by-step instructions for installing, configuring, running, and testing the **Viento Distributed Edge Inference Mesh**.
 
 ---
 
@@ -25,9 +25,9 @@ This document provides complete, step-by-step instructions for installing, confi
               │ (HTTPS / SSE Streaming)
               ▼
    ┌────────────────────────────────────────────────────────┐
-   │       Zephyr Cloud Gateway (FastAPI / Uvicorn)         │
+   │       Viento Cloud Gateway (FastAPI / Uvicorn)         │
    │  • POST /v1/chat/completions (OpenAI Compatible)       │
-   │  • Zero-Trust Session KeyStore (zph_tmp_... 1hr TTL)   │
+   │  • Zero-Trust Session KeyStore (vnt_tmp_... 1hr TTL)   │
    │  • Atomic Multi-Tier Capacity Dispatcher               │
    │  • Bidirectional WebSocket Endpoint (/ws/runtime)      │
    └──────────────────────────┬─────────────────────────────┘
@@ -68,14 +68,14 @@ cd Cloud
 pip install -r requirements.txt
 
 # Configure environment variables
-export ZEPHYR_ENV=development
-export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
-export ZEPHYR_PORT=10000
+export VIENTO_ENV=development
+export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
+export VIENTO_PORT=10000
 
 # (On Windows PowerShell)
-# $env:ZEPHYR_ENV="development"
-# $env:ZEPHYR_BOOTSTRAP_KEY="zephyr_dev_secret_key_2026"
-# $env:ZEPHYR_PORT="10000"
+# $env:VIENTO_ENV="development"
+# $env:VIENTO_BOOTSTRAP_KEY="viento_dev_secret_key_2026"
+# $env:VIENTO_PORT="10000"
 
 # Start the server
 uvicorn app.main:app --host 0.0.0.0 --port 10000 --reload
@@ -116,14 +116,14 @@ python -m vllm.entrypoints.openai.api_server \
 
 ## 5. Component 3: Viento Edge Runtime Node
 
-The `viento` SDK connects to the cloud gateway, authenticates via `ZEPHYR_BOOTSTRAP_KEY`, registers hardware capabilities and discovered models, and receives incoming jobs.
+The `viento` SDK connects to the cloud gateway, authenticates via `VIENTO_BOOTSTRAP_KEY`, registers hardware capabilities and discovered models, and receives incoming jobs.
 
 ```bash
 # Install the SDK in editable mode
 pip install -e SDK/
 
 # Set the bootstrap secret matching your Cloud Server
-export ZEPHYR_BOOTSTRAP_KEY=zephyr_dev_secret_key_2026
+export VIENTO_BOOTSTRAP_KEY=viento_dev_secret_key_2026
 
 # Connect to the local Cloud Server
 viento run --server ws://localhost:10000/ws/runtime
@@ -136,10 +136,10 @@ viento run --server ws://localhost:10000/ws/runtime
 Upon successful registration, you will see:
 ```text
 ╔══════════════════════════════════════════════════════════════╗
-║               ⚡  ZEPHYR NODE AUTHENTICATED  ⚡              ║
+║               ⚡  VIENTO NODE AUTHENTICATED  ⚡              ║
 ╠══════════════════════════════════════════════════════════════╣
-║  Session ID  : zph_sess_7a3d12c8                            ║
-║  API Key     : zph_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
+║  Session ID  : vnt_sess_7a3d12c8                            ║
+║  API Key     : vnt_tmp_9e8f1b2c4d5a... (1-hour TTL)         ║
 ║  Models      : llama3:latest, phi3:mini                     ║
 ║  Backend     : Ollama @ http://localhost:11434               ║
 ║  Capacity    : Max 2 concurrent jobs                         ║
@@ -154,7 +154,7 @@ Upon successful registration, you will see:
 ### Using cURL:
 ```bash
 curl -N http://localhost:10000/v1/chat/completions \
-  -H "Authorization: Bearer zph_tmp_YOUR_SESSION_KEY" \
+  -H "Authorization: Bearer vnt_tmp_YOUR_SESSION_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "llama3:latest",
@@ -172,7 +172,7 @@ from openai import OpenAI
 
 client = OpenAI(
     base_url="http://localhost:10000/v1",
-    api_key="zph_tmp_YOUR_SESSION_KEY"
+    api_key="vnt_tmp_YOUR_SESSION_KEY"
 )
 
 response = client.chat.completions.create(
@@ -207,7 +207,7 @@ auth.save(user_id="YOUR_USER_ID", auth_token="sk-lit-YOUR_KEY")
 
 # 2. Provision and start Studio on Tesla T4
 studio = Studio(
-    name="zephyr-gpu-worker",
+    name="viento-gpu-worker",
     teamspace="YOUR_TEAMSPACE",
     user="YOUR_USERNAME",
     create_ok=True
@@ -217,7 +217,7 @@ studio.start(machine=Machine.T4)
 # 3. Clone and boot the node
 print(studio.run("""
 git clone https://github.com/abhinav00anand/zephyr.git
-cd zephyr
+cd viento
 pip install -e SDK/
 viento run --server wss://viento.onrender.com/ws/runtime
 """))
@@ -256,7 +256,7 @@ Results are saved to `test_results/benchmark_report.json` and `test_results/conc
 
 | Issue | Diagnosis | Solution |
 | :--- | :--- | :--- |
-| `Bootstrap key rejected` | Server rejected handshake | Ensure `ZEPHYR_BOOTSTRAP_KEY` matches between client and cloud. |
+| `Bootstrap key rejected` | Server rejected handshake | Ensure `VIENTO_BOOTSTRAP_KEY` matches between client and cloud. |
 | `Queue full (max 50)` | Node reached max queue depth | Increase `--concurrency` or add more worker nodes to the mesh. |
 | `Model not found` | Requested model not loaded | Run `viento models` to inspect loaded weights, or `ollama pull <model>`. |
 | `nvidia-smi not found` | Running on CPU-only node | Normal behavior; Viento gracefully falls back to CPU & RAM telemetry. |

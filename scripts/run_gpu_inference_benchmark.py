@@ -15,16 +15,16 @@ auth = Auth()
 auth.save(user_id="a3220a59-f43e-4d4d-843d-08b38bb8bbea", auth_token="sk-lit-698f2cfc-3fe8-433d-98da-b03aa08d5037")
 
 studio = Studio(
-    name="zephyr-t4-node",
+    name="viento-t4-node",
     teamspace="financial-llm-training-project",
     user="abhinav337463"
 )
 
-with open("scripts/remote_zephyr_test.py", "rb") as f:
+with open("scripts/remote_viento_test.py", "rb") as f:
     b64_content = base64.b64encode(f.read()).decode("ascii")
 
 # Model and dependencies are already cached and installed from the previous run!
-remote_cmd = f"echo '{b64_content}' | base64 -d > run_zephyr_test.py && python3 run_zephyr_test.py"
+remote_cmd = f"echo '{b64_content}' | base64 -d > run_viento_test.py && python3 run_viento_test.py"
 
 print("==> Executing remote benchmark on T4 GPU...")
 out = studio.run(remote_cmd)

@@ -1,5 +1,5 @@
 """
-Zephyr SDK Default Configuration & Environment Variable Handling.
+Viento SDK Default Configuration & Environment Variable Handling.
 
 Defines canonical defaults for all configurable parameters, maps environment
 variables to configuration keys, and provides a validation utility for
@@ -11,9 +11,9 @@ import os
 from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
-    from viento.config.loader import ZephyrConfig
+    from viento.config.loader import VientoConfig
 
-logger = logging.getLogger("zephyr.config.defaults")
+logger = logging.getLogger("viento.config.defaults")
 
 # ---------------------------------------------------------------------------
 # Canonical Defaults
@@ -26,7 +26,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Local Backend
     "ollama_url": "http://localhost:11434",
     # Node Identity
-    "node_name": "zephyr-node",
+    "node_name": "viento-node",
     # Concurrency
     "max_concurrency": 1,
     # Heartbeat
@@ -50,22 +50,22 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 # Environment Variable Mapping
 # ---------------------------------------------------------------------------
 
-# Maps OS environment variable name -> ZephyrConfig attribute name
+# Maps OS environment variable name -> VientoConfig attribute name
 ENV_VAR_MAPPING: Dict[str, str] = {
-    "ZEPHYR_SERVER_URL": "server_url",
-    "ZEPHYR_HTTP_URL": "http_url",
-    "ZEPHYR_OLLAMA_URL": "ollama_url",
-    "ZEPHYR_NODE_NAME": "node_name",
-    "ZEPHYR_MAX_CONCURRENCY": "max_concurrency",
-    "ZEPHYR_HEARTBEAT_INTERVAL": "heartbeat_interval",
-    "ZEPHYR_HEARTBEAT_DEADLINE": "heartbeat_deadline",
-    "ZEPHYR_JOB_TIMEOUT": "job_timeout",
-    "ZEPHYR_MAX_QUEUE_DEPTH": "max_queue_depth",
-    "ZEPHYR_TOKEN_TTL": "token_ttl",
-    "ZEPHYR_LOG_LEVEL": "log_level",
-    "ZEPHYR_LOG_JSON": "log_json",
-    "ZEPHYR_RECONNECT_BASE_DELAY": "reconnect_base_delay",
-    "ZEPHYR_RECONNECT_MAX_DELAY": "reconnect_max_delay",
+    "VIENTO_SERVER_URL": "server_url",
+    "VIENTO_HTTP_URL": "http_url",
+    "VIENTO_OLLAMA_URL": "ollama_url",
+    "VIENTO_NODE_NAME": "node_name",
+    "VIENTO_MAX_CONCURRENCY": "max_concurrency",
+    "VIENTO_HEARTBEAT_INTERVAL": "heartbeat_interval",
+    "VIENTO_HEARTBEAT_DEADLINE": "heartbeat_deadline",
+    "VIENTO_JOB_TIMEOUT": "job_timeout",
+    "VIENTO_MAX_QUEUE_DEPTH": "max_queue_depth",
+    "VIENTO_TOKEN_TTL": "token_ttl",
+    "VIENTO_LOG_LEVEL": "log_level",
+    "VIENTO_LOG_JSON": "log_json",
+    "VIENTO_RECONNECT_BASE_DELAY": "reconnect_base_delay",
+    "VIENTO_RECONNECT_MAX_DELAY": "reconnect_max_delay",
 }
 
 # Numeric fields that should be cast to int
@@ -89,22 +89,22 @@ _FLOAT_FIELDS = {
 _BOOL_FIELDS = {"log_json"}
 
 
-def apply_env_overrides(config: "ZephyrConfig") -> "ZephyrConfig":
-    """Read environment variables and override matching ZephyrConfig attributes.
+def apply_env_overrides(config: "VientoConfig") -> "VientoConfig":
+    """Read environment variables and override matching VientoConfig attributes.
 
     Environment variables always take precedence over values stored in
     ``~/.viento/config.toml``. This enables container-friendly deployment
     where all configuration is injected at runtime via env vars.
 
     Args:
-        config: A loaded :class:`ZephyrConfig` instance to mutate in-place.
+        config: A loaded :class:`VientoConfig` instance to mutate in-place.
 
     Returns:
         The same ``config`` object with any env-var overrides applied.
 
     Example::
 
-        os.environ["ZEPHYR_SERVER_URL"] = "wss://myhost.example.com/ws/runtime"
+        os.environ["VIENTO_SERVER_URL"] = "wss://myhost.example.com/ws/runtime"
         cfg = apply_env_overrides(config_manager.load_config())
         # cfg.server_url == "wss://myhost.example.com/ws/runtime"
     """
@@ -143,8 +143,8 @@ def apply_env_overrides(config: "ZephyrConfig") -> "ZephyrConfig":
     return config
 
 
-def validate_config(config: "ZephyrConfig") -> List[str]:
-    """Validate a :class:`ZephyrConfig` instance and return a list of warnings.
+def validate_config(config: "VientoConfig") -> List[str]:
+    """Validate a :class:`VientoConfig` instance and return a list of warnings.
 
     This is a non-blocking pre-flight check.  It returns warnings rather than
     raising exceptions so that the caller can decide how to surface them

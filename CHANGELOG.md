@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the **Zephyr SDK** will be documented in this file.
+All notable changes to the **Viento SDK** will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -41,14 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `LlamaCppAdapter` and `VLLMAdapter` with stub `cancel()` and embedding `handle_callback` wiring.
 - `SequenceTracker` and `ProtocolValidator` in `protocol/validator.py`.
 - `TelemetryCollector` with CPU/RAM/GPU metrics, latency histograms, and request counters.
-- `SecretMasker` in `telemetry/logging.py` — masks `zph_tmp_...` patterns in all log output.
+- `SecretMasker` in `telemetry/logging.py` — masks `vnt_tmp_...` patterns in all log output.
 - Full `VientoClient` and `AsyncVientoClient` with OpenAI-compatible interface.
 - CLI commands: `run`, `status`, `models`, `pull`, `doctor`, `config`, `stop`.
 - 47-test suite covering all subsystems with 100% pass rate.
 
 ### Fixed
 - Session key (`active_key`) is stripped before `RuntimeState` is serialized to disk.
-- `ConnectionManager` bootstraps correctly with `ZephyrConfig` default values.
+- `ConnectionManager` bootstraps correctly with `VientoConfig` default values.
 - Ollama embedding fallback from `/api/embeddings` to `/api/embed` on HTTP error.
 - `ProtocolEnvelope.to_json()` correctly serializes `FrameType` enum values as strings.
 - `ProtocolEnvelope.from_json()` correctly handles all registered frame types.

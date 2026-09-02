@@ -1,6 +1,6 @@
-# Zephyr SDK - Ollama Deep Integration & Optimization Guide
+# Viento SDK - Ollama Deep Integration & Optimization Guide
 
-This document provides complete instructions for pairing the **Zephyr SDK** (`viento`) with [Ollama](https://ollama.com) as your primary local inference backend.
+This document provides complete instructions for pairing the **Viento SDK** (`viento`) with [Ollama](https://ollama.com) as your primary local inference backend.
 
 ---
 
@@ -11,14 +11,14 @@ This document provides complete instructions for pairing the **Zephyr SDK** (`vi
  │                   Model Host Machine                    │
  │                                                         │
  │  ┌─────────────────────────┐   HTTP   ┌──────────────┐  │
- │  │ Zephyr SDK CLI          │ ─────────│ Ollama API   │  │
+ │  │ Viento SDK CLI          │ ─────────│ Ollama API   │  │
  │  │ (viento run)            │ localhost│ :11434       │  │
  │  └────────────┬────────────┘ :11434   └──────────────┘  │
  └───────────────┼─────────────────────────────────────────┘
                  │ Outbound WSS /ws/runtime
                  ▼
-      [ Zephyr Cloud Server ]
-   (https://zephyr.onrender.com)
+      [ Viento Cloud Server ]
+   (https://viento.onrender.com)
 ```
 
 ---
@@ -45,7 +45,7 @@ curl http://localhost:11434/api/tags
 
 ## Supported Ollama Models
 
-Zephyr automatically discovers all models pulled locally into your Ollama instance:
+Viento automatically discovers all models pulled locally into your Ollama instance:
 
 | Model Tag | Parameters | Recommended Quantization | Memory (VRAM) |
 |---|---|---|---|
@@ -57,7 +57,7 @@ Zephyr automatically discovers all models pulled locally into your Ollama instan
 
 ---
 
-## Operating Zephyr with Ollama
+## Operating Viento with Ollama
 
 ### 1. Model Discovery & Verification
 Before booting the cloud runtime, verify available models:
@@ -67,29 +67,29 @@ viento models
 ```
 
 ### 2. Pulling New Models Interactive
-Pull new model weights directly via Zephyr CLI:
+Pull new model weights directly via Viento CLI:
 
 ```bash
 viento pull llama3.1:8b
 ```
 
 ### 3. Starting the Node Session
-Boot the Zephyr runtime bound to Ollama:
+Boot the Viento runtime bound to Ollama:
 
 ```bash
-viento run --backend ollama --server https://zephyr.onrender.com
+viento run --backend ollama --server https://viento.onrender.com
 ```
 
 Output:
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                 ZEPHYR LOCAL RUNTIME ONLINE                 │
+│                 VIENTO LOCAL RUNTIME ONLINE                 │
 │                                                             │
-│  Server Target : https://zephyr.onrender.com               │
+│  Server Target : https://viento.onrender.com               │
 │  Backend Engine: Ollama (http://localhost:11434)           │
 │  Discovered    : llama3.1:8b, qwen2.5:7b                    │
 │                                                             │
-│  Temporary Key : zph_tmp_9f8c2b7d4a1e3f608152438761109abc    │
+│  Temporary Key : vnt_tmp_9f8c2b7d4a1e3f608152438761109abc    │
 │  Key Expiry    : 1 Hour (3600 seconds)                      │
 │                                                             │
 │  Use this key in standard OpenAI SDK applications!          │

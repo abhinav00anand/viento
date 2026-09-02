@@ -1,5 +1,5 @@
 """
-CLI package module for Zephyr SDK.
+CLI package module for Viento SDK.
 """
 
 from viento.cli.main import cli

@@ -1,8 +1,8 @@
 """
-High-Level Python Client for Zephyr Cloud AI API.
+High-Level Python Client for Viento Cloud AI API.
 
 Provides an OpenAI-compatible Python interface for invoking LLM chat completions
-and vector embeddings across the Zephyr distributed mesh network.
+and vector embeddings across the Viento distributed mesh network.
 """
 
 import os
@@ -176,7 +176,7 @@ class AsyncEmbeddings:
 
 class VientoClient:
     """
-    Synchronous Python Client for calling Zephyr Cloud APIs.
+    Synchronous Python Client for calling Viento Cloud APIs.
     """
 
     def __init__(
@@ -186,9 +186,9 @@ class VientoClient:
         timeout: float = 60.0,
     ):
         self.base_url = (
-            base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")
+            base_url or os.getenv("VIENTO_BASE_URL", "https://viento.onrender.com")
         ).rstrip("/")
-        self.api_key = api_key or os.getenv("ZEPHYR_API_KEY", "")
+        self.api_key = api_key or os.getenv("VIENTO_API_KEY", "")
         self.timeout = timeout
 
         self.chat = Chat(self)
@@ -209,7 +209,7 @@ class VientoClient:
         stream: bool = False,
         **kwargs: Any,
     ) -> Union[ChatCompletionResponse, Generator[ChatCompletionChunk, None, None]]:
-        """Submit a chat completion request to the Zephyr Cloud gateway."""
+        """Submit a chat completion request to the Viento Cloud gateway."""
         url = f"{self.base_url}/v1/chat/completions"
         payload = {
             "model": model,
@@ -226,7 +226,7 @@ class VientoClient:
         with httpx.Client(timeout=self.timeout) as client:
             res = client.post(url, json=payload, headers=self._headers())
             if res.status_code != 200:
-                raise RuntimeError(f"Zephyr API Error ({res.status_code}): {res.text}")
+                raise RuntimeError(f"Viento API Error ({res.status_code}): {res.text}")
 
             data = res.json()
             choices = [
@@ -252,13 +252,13 @@ class VientoClient:
     def create_embedding(
         self, model: str, input: Union[str, List[str]], **kwargs: Any
     ) -> EmbeddingResponse:
-        """Submit an embedding creation request to the Zephyr Cloud gateway."""
+        """Submit an embedding creation request to the Viento Cloud gateway."""
         url = f"{self.base_url}/v1/embeddings"
         payload = {"model": model, "input": input, **kwargs}
         with httpx.Client(timeout=self.timeout) as client:
             res = client.post(url, json=payload, headers=self._headers())
             if res.status_code != 200:
-                raise RuntimeError(f"Zephyr Embedding API Error ({res.status_code}): {res.text}")
+                raise RuntimeError(f"Viento Embedding API Error ({res.status_code}): {res.text}")
 
             data = res.json()
             objects = [
@@ -277,7 +277,7 @@ class VientoClient:
         with httpx.Client(timeout=self.timeout) as client:
             with client.stream("POST", url, json=payload, headers=self._headers()) as res:
                 if res.status_code != 200:
-                    raise RuntimeError(f"Zephyr Streaming API Error ({res.status_code})")
+                    raise RuntimeError(f"Viento Streaming API Error ({res.status_code})")
                 for line in res.iter_lines():
                     if line.startswith("data: "):
                         content_str = line[6:].strip()
@@ -308,7 +308,7 @@ class VientoClient:
                             continue
 
     def list_models(self) -> List[Dict[str, Any]]:
-        """List active available models across the Zephyr mesh."""
+        """List active available models across the Viento mesh."""
         url = f"{self.base_url}/v1/models"
         with httpx.Client(timeout=10.0) as client:
             res = client.get(url, headers=self._headers())
@@ -317,7 +317,7 @@ class VientoClient:
             raise RuntimeError(f"Failed to list models ({res.status_code}): {res.text}")
 
     def health_check(self) -> Dict[str, Any]:
-        """Perform health check against Zephyr Cloud endpoint."""
+        """Perform health check against Viento Cloud endpoint."""
         url = f"{self.base_url}/healthz"
         with httpx.Client(timeout=5.0) as client:
             res = client.get(url)
@@ -329,7 +329,7 @@ class VientoClient:
 
 class AsyncVientoClient:
     """
-    Asynchronous Python Client for calling Zephyr Cloud APIs.
+    Asynchronous Python Client for calling Viento Cloud APIs.
     """
 
     def __init__(
@@ -339,9 +339,9 @@ class AsyncVientoClient:
         timeout: float = 60.0,
     ):
         self.base_url = (
-            base_url or os.getenv("ZEPHYR_BASE_URL", "https://zephyr.onrender.com")
+            base_url or os.getenv("VIENTO_BASE_URL", "https://viento.onrender.com")
         ).rstrip("/")
-        self.api_key = api_key or os.getenv("ZEPHYR_API_KEY", "")
+        self.api_key = api_key or os.getenv("VIENTO_API_KEY", "")
         self.timeout = timeout
 
         self.chat = AsyncChat(self)
@@ -378,7 +378,7 @@ class AsyncVientoClient:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             res = await client.post(url, json=payload, headers=self._headers())
             if res.status_code != 200:
-                raise RuntimeError(f"Zephyr API Error ({res.status_code}): {res.text}")
+                raise RuntimeError(f"Viento API Error ({res.status_code}): {res.text}")
 
             data = res.json()
             choices = [
@@ -404,13 +404,13 @@ class AsyncVientoClient:
     async def create_embedding(
         self, model: str, input: Union[str, List[str]], **kwargs: Any
     ) -> EmbeddingResponse:
-        """Submit an embedding creation request asynchronously to the Zephyr Cloud gateway."""
+        """Submit an embedding creation request asynchronously to the Viento Cloud gateway."""
         url = f"{self.base_url}/v1/embeddings"
         payload = {"model": model, "input": input, **kwargs}
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             res = await client.post(url, json=payload, headers=self._headers())
             if res.status_code != 200:
-                raise RuntimeError(f"Zephyr Embedding API Error ({res.status_code}): {res.text}")
+                raise RuntimeError(f"Viento Embedding API Error ({res.status_code}): {res.text}")
 
             data = res.json()
             objects = [
@@ -429,7 +429,7 @@ class AsyncVientoClient:
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             async with client.stream("POST", url, json=payload, headers=self._headers()) as res:
                 if res.status_code != 200:
-                    raise RuntimeError(f"Zephyr Streaming API Error ({res.status_code})")
+                    raise RuntimeError(f"Viento Streaming API Error ({res.status_code})")
                 async for line in res.aiter_lines():
                     if line.startswith("data: "):
                         content_str = line[6:].strip()

@@ -1,5 +1,5 @@
 """
-Zephyr Command Line Interface (CLI).
+Viento Command Line Interface (CLI).
 
 Provides terminal commands for node runtime execution, initialization, status inspection,
 local model listing/registration, environment diagnostics, configuration editing,
@@ -34,7 +34,7 @@ from rich.table import Table
 from rich.text import Text
 
 from viento.backends import get_backend_adapter
-from viento.config.loader import ConfigManager, RuntimeState, ZephyrConfig
+from viento.config.loader import ConfigManager, RuntimeState, VientoConfig
 from viento.connection.manager import ConnectionManager
 from viento.scheduler.scheduler import JobScheduler
 
@@ -43,14 +43,14 @@ config_mgr = ConfigManager()
 
 
 @click.group()
-@click.version_option(version="0.1.0-beta", prog_name="zephyr")
+@click.version_option(version="0.1.0-beta", prog_name="viento")
 def cli():
-    """Zephyr Cloud CLI - Distributed AI Mesh Network Runtime & SDK."""
+    """Viento Cloud CLI - Distributed AI Mesh Network Runtime & SDK."""
     pass
 
 
 # -----------------------------------------------------------------------------
-# Command: zephyr init
+# Command: viento init
 # -----------------------------------------------------------------------------
 @cli.command("init")
 @click.option("--force", "-f", is_flag=True, help="Overwrite existing config.toml if it exists.")
@@ -60,8 +60,8 @@ def init_command(force: bool):
     if cfg_file.exists() and not force:
         console.print(
             Panel(
-                f"[yellow]Zephyr configuration already initialized at:[/yellow]\n[cyan]{cfg_file}[/cyan]\n\n"
-                "[dim]Use `zephyr init --force` to overwrite.[/dim]",
+                f"[yellow]Viento configuration already initialized at:[/yellow]\n[cyan]{cfg_file}[/cyan]\n\n"
+                "[dim]Use `viento init --force` to overwrite.[/dim]",
                 title="Configuration Exists",
                 border_style="yellow",
             )
@@ -69,12 +69,12 @@ def init_command(force: bool):
         return
 
     config_mgr.ensure_directories()
-    default_cfg = ZephyrConfig()
+    default_cfg = VientoConfig()
     config_mgr.save_config(default_cfg)
 
     console.print(
         Panel.fit(
-            "[bold green]✔ ZEPHYR INITIALIZED SUCCESSFULLY[/bold green]\n\n"
+            "[bold green]✔ VIENTO INITIALIZED SUCCESSFULLY[/bold green]\n\n"
             f"[dim]Config Path:[/dim] [yellow]{cfg_file}[/yellow]\n"
             f"[dim]Logs Directory:[/dim] [yellow]{config_mgr.logs_dir}[/yellow]\n"
             f"[dim]Gateway Server:[/dim] [cyan]{default_cfg.server_url}[/cyan]\n"
@@ -85,12 +85,12 @@ def init_command(force: bool):
 
 
 # -----------------------------------------------------------------------------
-# Command: zephyr version
+# Command: viento version
 # -----------------------------------------------------------------------------
 @cli.command("version")
 def version_command():
     """Output SDK runtime, Python environment, and protocol version information."""
-    table = Table(title="Zephyr Version & Environment Info", show_header=True, header_style="bold cyan")
+    table = Table(title="Viento Version & Environment Info", show_header=True, header_style="bold cyan")
     table.add_column("Property", style="yellow")
     table.add_column("Value", style="white")
 
@@ -98,13 +98,13 @@ def version_command():
     table.add_row("Protocol Envelope Version", "1.0")
     table.add_row("Python Version", sys.version.split(" ")[0])
     table.add_row("Platform OS", sys.platform)
-    table.add_row("Config Directory", str(config_mgr.zephyr_dir))
+    table.add_row("Config Directory", str(config_mgr.viento_dir))
 
     console.print(table)
 
 
 # -----------------------------------------------------------------------------
-# Command: zephyr logs
+# Command: viento logs
 # -----------------------------------------------------------------------------
 @cli.command("logs")
 @click.option("--lines", "-n", type=int, default=50, help="Number of log lines to show (default 50).")
@@ -127,7 +127,7 @@ def logs_command(lines: int):
 # Command: viento run
 # -----------------------------------------------------------------------------
 @cli.command("run")
-@click.option("--server", "-s", type=str, help="Override Zephyr WSS Cloud Gateway URL.")
+@click.option("--server", "-s", type=str, help="Override Viento WSS Cloud Gateway URL.")
 @click.option("--ollama-url", "-o", type=str, help="Override local Ollama API URL.")
 @click.option("--name", "-n", type=str, help="Custom runtime node name / ID.")
 @click.option("--node-name", type=str, help="Custom runtime node name / ID.")
@@ -159,7 +159,7 @@ def run_command(
 
     console.print(
         Panel.fit(
-            "[bold cyan]⚡ ZEPHYR RUNTIME BOOTSTRAP[/bold cyan]\n"
+            "[bold cyan]⚡ VIENTO RUNTIME BOOTSTRAP[/bold cyan]\n"
             f"[dim]Server Gateway:[/dim] [yellow]{cfg.server_url}[/yellow]\n"
             f"[dim]Backend Adapter:[/dim] [green]{backend.name()}[/green]\n"
             f"[dim]Engine Endpoint:[/dim] [yellow]{cfg.ollama_url}[/yellow]\n"
@@ -233,7 +233,7 @@ def status_command():
     status_color = "green" if state.status == "running" else "yellow" if state.status in ("booting", "busy") else "red"
     key_display = "Available in running process (in-memory only)" if state.status in ("running", "busy") else "N/A (Process stopped)"
 
-    table = Table(title="Zephyr Runtime Node Status", show_header=True, header_style="bold magenta")
+    table = Table(title="Viento Runtime Node Status", show_header=True, header_style="bold magenta")
     table.add_column("Property", style="cyan")
     table.add_column("Value", style="white")
 
@@ -345,7 +345,7 @@ def doctor_command():
     """Diagnose local environment (Ollama API reachability, GPU/CPU stats, Cloud network)."""
     cfg = config_mgr.load_config()
 
-    console.print(Panel("[bold cyan]🩺 ZEPHYR ENVIRONMENT DIAGNOSTIC DOCTOR[/bold cyan]", border_style="cyan"))
+    console.print(Panel("[bold cyan]🩺 VIENTO ENVIRONMENT DIAGNOSTIC DOCTOR[/bold cyan]", border_style="cyan"))
     table = Table(show_header=True, header_style="bold white")
     table.add_column("Component", style="bold yellow")
     table.add_column("Status", style="bold")
@@ -550,12 +550,12 @@ def stop_command():
     """Gracefully drain active jobs, update runtime state, and stop node process."""
     state = config_mgr.load_runtime_state()
     if state.status == "stopped":
-        console.print("[yellow]Zephyr runtime node is already stopped.[/yellow]")
+        console.print("[yellow]Viento runtime node is already stopped.[/yellow]")
         return
 
     console.print("[bold yellow]Draining active jobs and sending disconnect signal...[/bold yellow]")
     config_mgr.update_runtime_state(status="stopped", active_api_key=None, key_expires_at=None)
-    console.print("[bold green]✔ Zephyr runtime node gracefully stopped.[/bold green]")
+    console.print("[bold green]✔ Viento runtime node gracefully stopped.[/bold green]")
 
 
 if __name__ == "__main__":

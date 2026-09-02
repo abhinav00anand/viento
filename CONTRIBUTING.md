@@ -1,8 +1,8 @@
-# Contributing to Zephyr SDK
+# Contributing to Viento SDK
 
 First off — **thank you** for taking the time to contribute! 🎉
 
-Zephyr is an open-source project and every contribution matters, whether it's a bug fix, a new backend adapter, documentation improvement, or a fresh test case.
+Viento is an open-source project and every contribution matters, whether it's a bug fix, a new backend adapter, documentation improvement, or a fresh test case.
 
 ---
 
@@ -32,7 +32,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 ### Bug Reports
 File a detailed issue at [GitHub Issues](https://github.com/abhinav00anand/zephyr/issues) using the **Bug Report** template. Include:
-- Python version, OS, Zephyr SDK version
+- Python version, OS, Viento SDK version
 - Minimal reproduction steps
 - Expected vs actual behavior
 - Stack trace (if applicable)
@@ -130,7 +130,7 @@ Before opening a PR, ensure:
 ## Automated AI Reviews (Antigravity)
 
 All Pull Requests are automatically reviewed by the **Antigravity PR Review Agent**:
-- **Automated First Pass**: Runs on PR creation and updates, validating against Zephyr SDK architectural standards, typing, and formatting.
+- **Automated First Pass**: Runs on PR creation and updates, validating against Viento SDK architectural standards, typing, and formatting.
 - **On-Demand Review**: Triggered anytime by commenting `@agy /review` on the PR.
 - **Deep Check Audit**: Comment `@agy /deepcheck` on the PR to run a rigorous deep audit covering:
   - Canonical Envelope Protocol (V1.0) compatibility
@@ -168,7 +168,7 @@ pytest tests/ -v -m "not slow"
 - **Linter:** `ruff`
 - **Type hints:** Required on all public APIs
 - **Docstrings:** Google style for all public classes/methods
-- **Logging:** Use `logging.getLogger("zephyr.<module>")` — never `print()`
+- **Logging:** Use `logging.getLogger("viento.<module>")` — never `print()`
 - **Secrets:** Never log or persist raw API keys; use `SecretMasker` from `viento.telemetry.logging`
 
 ---
@@ -193,4 +193,4 @@ Use the GitHub Issues bug template. For security vulnerabilities, please email *
 
 ---
 
-Thank you for being part of the Zephyr community! 🌊⚡
+Thank you for being part of the Viento community! 🌊⚡

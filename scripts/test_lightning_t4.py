@@ -10,7 +10,7 @@ auth.save(user_id="a3220a59-f43e-4d4d-843d-08b38bb8bbea", auth_token="sk-lit-698
 
 print("==> Initializing Studio on teamspace 'financial-llm-training-project'...")
 studio = Studio(
-    name="zephyr-t4-node",
+    name="viento-t4-node",
     teamspace="financial-llm-training-project",
     user="abhinav337463",
     create_ok=True

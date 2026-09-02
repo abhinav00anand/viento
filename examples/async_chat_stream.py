@@ -1,7 +1,7 @@
 """Production async Python example using AsyncVientoClient SDK.
 
 Usage:
-    python async_chat_stream.py --key zph_tmp_... --server https://zephyr.onrender.com
+    python async_chat_stream.py --key vnt_tmp_... --server https://viento.onrender.com
 """
 
 import argparse
@@ -11,9 +11,9 @@ from viento.client import AsyncVientoClient
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Zephyr Async Client Example")
-    parser.add_argument("--key", required=True, help="1-hour temporary API key (zph_tmp_...)")
-    parser.add_argument("--server", default="https://zephyr.onrender.com", help="Zephyr server base URL")
+    parser = argparse.ArgumentParser(description="Viento Async Client Example")
+    parser.add_argument("--key", required=True, help="1-hour temporary API key (vnt_tmp_...)")
+    parser.add_argument("--server", default="https://viento.onrender.com", help="Viento server base URL")
     parser.add_argument("--model", default="llama3.1:8b", help="Model name advertised by node")
     args = parser.parse_args()
 
