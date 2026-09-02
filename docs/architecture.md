@@ -1,6 +1,6 @@
 # Viento SDK — Architecture & Design Reference
 
-> **Version**: 0.1.0 | **Target**: Viento Cloud `v1` Protocol
+> **Version**: 0.4.0 | **Target**: Viento Cloud `v1` Protocol
 
 ---
 
@@ -368,11 +368,15 @@ Logs are emitted as structured JSON when `log_json=true`, enabling ingestion by 
 
 | Key | Env Var | Default | Description |
 |-----|---------|---------|-------------|
+| `bootstrap_key` | `VIENTO_BOOTSTRAP_KEY` | `""` | Node authentication bootstrap key |
 | `server_url` | `VIENTO_SERVER_URL` | `wss://viento.onrender.com/ws/runtime` | Cloud WSS gateway URL |
 | `http_url` | `VIENTO_HTTP_URL` | `https://viento.onrender.com` | Cloud HTTP base URL |
+| `model_backend` | `VIENTO_MODEL_BACKEND` | `ollama` | Active backend engine (ollama/vllm/llamacpp) |
 | `ollama_url` | `VIENTO_OLLAMA_URL` | `http://localhost:11434` | Local Ollama endpoint |
+| `vllm_url` | `VIENTO_VLLM_URL` | `http://localhost:8000/v1` | Local vLLM endpoint |
+| `llamacpp_url` | `VIENTO_LLAMACPP_URL` | `http://localhost:8080` | Local llama.cpp endpoint |
 | `node_name` | `VIENTO_NODE_NAME` | `viento-node` | Node identifier in Cloud |
-| `max_concurrency` | `VIENTO_MAX_CONCURRENCY` | `1` | Max simultaneous jobs |
+| `max_concurrency` | `VIENTO_MAX_CONCURRENCY` | `2` | Max simultaneous jobs |
 | `heartbeat_interval` | `VIENTO_HEARTBEAT_INTERVAL` | `15` | Seconds between heartbeats |
 | `heartbeat_deadline` | `VIENTO_HEARTBEAT_DEADLINE` | `45` | Server eviction timeout |
 | `job_timeout` | `VIENTO_JOB_TIMEOUT` | `120` | Per-job deadline (seconds) |

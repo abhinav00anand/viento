@@ -218,19 +218,16 @@ studio.stop()
 
 ### Unit Tests:
 ```bash
-# Cloud Gateway Tests
-pytest Cloud/tests/ -v
-
-# SDK & Adapter Tests
-pytest SDK/tests/ -v
+# Run the complete test suite (82/82 passing)
+pytest tests/ -v
 ```
 
 ### Advanced Concurrency & Stress Tests:
 ```bash
-# Run the stress test suite
-pytest SDK/tests/test_concurrency_stress.py -v
+# Run the concurrency stress test suite
+pytest tests/test_concurrency_stress.py -v
 
-# Run the benchmark visualizer & report generator
+# Run the real in-memory scheduler stress benchmark & visualizer
 python scripts/run_stress_benchmark_suite.py
 ```
 

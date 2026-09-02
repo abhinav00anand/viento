@@ -193,7 +193,7 @@ In a Kaggle Python notebook with GPU enabled:
 ```python
 !git clone https://github.com/abhinav00anand/viento.git
 %cd viento
-!pip install -q -e SDK/
+!pip install -q -e .
 
 # Launch background node
 import subprocess
@@ -243,14 +243,14 @@ viento status
 
 ### Run Unit & Integration Test Suites
 ```bash
-# Full test suite (79/79 passing)
-pytest SDK/tests -v
+# Full test suite (82/82 passing)
+pytest tests/ -v
 ```
 
 ### Run Advanced Concurrency Stress Tests & Benchmarks
 ```bash
 # Concurrency stress tests
-pytest SDK/tests/test_concurrency_stress.py -v
+pytest tests/test_concurrency_stress.py -v
 
 # Generate benchmark visual report (saved to test_results/)
 python scripts/run_stress_benchmark_suite.py

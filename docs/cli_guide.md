@@ -31,16 +31,21 @@ viento run [OPTIONS]
 
 #### Options:
 - `-s, --server TEXT`: Override default WSS gateway URL (`wss://viento.onrender.com/ws/runtime`).
+- `-b, --backend [ollama|vllm|llamacpp]`: Select inference backend engine (default: `ollama`).
 - `-o, --ollama-url TEXT`: Override default Ollama API endpoint (`http://localhost:11434`).
-- `-c, --concurrency INTEGER`: Set maximum concurrent inference jobs (default: `1`).
+- `--vllm-url TEXT`: Override default vLLM API endpoint (`http://localhost:8000/v1`).
+- `--llamacpp-url TEXT`: Override default llama.cpp API endpoint (`http://localhost:8080`).
+- `-c, --concurrency INTEGER`: Set maximum concurrent inference jobs (default: `2`).
+- `-k, --bootstrap-key TEXT`: Runtime bootstrap authentication key.
+- `--name, --node-name TEXT`: Custom node identifier.
 
 #### Examples:
 ```bash
 # Standard boot
 viento run
 
-# Connect to local dev server with concurrency 2
-viento run --server wss://localhost:8000/ws/runtime --concurrency 2
+# Connect to production gateway with vLLM engine and concurrency 4
+viento run --backend vllm --concurrency 4
 ```
 
 ---
@@ -108,7 +113,7 @@ viento config get max_concurrency
 ##### Set configuration value:
 ```bash
 viento config set max_concurrency 2
-viento config set server_url wss://gateway.viento.cloud/ws/runtime
+viento config set server_url wss://viento.onrender.com/ws/runtime
 ```
 
 ---
@@ -131,11 +136,13 @@ viento pull llama3:latest
 
 ### 7. `viento stop`
 
-Gracefully halts the running node by draining any pending jobs in the queue, sending a `disconnect` frame to the cloud gateway, clearing active session state, and returning the node status to `STOPPED`.
+Gracefully halts the running node by draining active jobs, terminating the running node process (matching its PID), and updating the runtime status to `STOPPED`.
 
 #### Usage:
 ```bash
 viento stop
+# or force termination:
+viento stop --force
 ```
 
 ---

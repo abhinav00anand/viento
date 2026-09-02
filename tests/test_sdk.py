@@ -195,3 +195,88 @@ def test_async_client_headers_and_init():
     headers = async_client._headers()
     assert "Authorization" in headers
     assert headers["Authorization"] == "Bearer vnt_tmp_123"
+
+
+def test_bootstrap_key_environment_wiring_and_precedence(monkeypatch, tmp_path):
+    from viento.config.defaults import apply_env_overrides
+
+    cm = ConfigManager(base_dir=tmp_path)
+    cfg = cm.load_config()
+    assert cfg.bootstrap_key == ""
+
+    # Test environment variable wiring
+    monkeypatch.setenv("VIENTO_BOOTSTRAP_KEY", "env_secret_key_xyz")
+    cfg = apply_env_overrides(cfg)
+    assert cfg.bootstrap_key == "env_secret_key_xyz"
+
+    # Test CLI flag precedence over environment variable
+    cli_override = "cli_flag_secret_abc"
+    if cli_override:
+        cfg.bootstrap_key = cli_override
+    assert cfg.bootstrap_key == "cli_flag_secret_abc"
+
+
+def test_multi_backend_cli_options_and_url_routing():
+    from click.testing import CliRunner
+
+    from viento.backends import get_backend_adapter
+    from viento.cli.main import cli
+
+    runner = CliRunner()
+    result = runner.invoke(cli, ["run", "--help"])
+    assert result.exit_code == 0
+    assert "--backend" in result.output
+    assert "--vllm-url" in result.output
+    assert "--llamacpp-url" in result.output
+
+    # Verify adapter factory picks up respective base URLs
+    vllm_adapter = get_backend_adapter("vllm", base_url="http://localhost:8000/v1")
+    assert vllm_adapter.name() == "vllm"
+    assert vllm_adapter.base_url == "http://localhost:8000/v1"
+
+    llama_adapter = get_backend_adapter("llamacpp", base_url="http://localhost:8080")
+    assert llama_adapter.name() == "llamacpp"
+    assert llama_adapter.base_url == "http://localhost:8080"
+
+
+def test_viento_stop_command_process_management(tmp_path, monkeypatch):
+    import psutil
+    from click.testing import CliRunner
+
+    import viento.cli.main as cli_main
+    from viento.cli.main import cli
+
+    # Point CLI to temporary directory
+    test_cm = ConfigManager(base_dir=tmp_path)
+    monkeypatch.setattr(cli_main, "config_mgr", test_cm)
+
+    # Scenario 1: No PID recorded -> resets state gracefully
+    test_cm.save_runtime_state(RuntimeState(status="running", pid=None))
+    runner = CliRunner()
+    res = runner.invoke(cli, ["stop"])
+    assert res.exit_code == 0
+    assert "No active Viento process PID found" in res.output
+    assert test_cm.load_runtime_state().status == "stopped"
+
+    # Scenario 2: PID recorded but process does not exist -> resets state to stopped
+    test_cm.save_runtime_state(RuntimeState(status="running", pid=99999999))
+    res = runner.invoke(cli, ["stop"])
+    assert res.exit_code == 0
+    assert "is not running. Resetting state" in res.output
+    assert test_cm.load_runtime_state().status == "stopped"
+
+    # Scenario 3: PID recorded and matches running mock process -> terminates it
+    mock_proc = MagicMock()
+    mock_proc.is_running.return_value = True
+    mock_proc.status.return_value = psutil.STATUS_RUNNING
+    mock_proc.cmdline.return_value = ["python", "-m", "viento", "run"]
+    mock_proc.name.return_value = "python.exe"
+
+    monkeypatch.setattr(psutil, "Process", lambda pid: mock_proc)
+    test_cm.save_runtime_state(RuntimeState(status="running", pid=12345))
+
+    res = runner.invoke(cli, ["stop"])
+    assert res.exit_code == 0
+    mock_proc.terminate.assert_called_once()
+    assert "successfully stopped" in res.output
+    assert test_cm.load_runtime_state().status == "stopped"

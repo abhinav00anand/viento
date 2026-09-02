@@ -28,7 +28,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     # Node Identity
     "node_name": "viento-node",
     # Concurrency
-    "max_concurrency": 1,
+    "max_concurrency": 2,
     # Heartbeat
     "heartbeat_interval": 15,  # seconds between heartbeat pings
     "heartbeat_deadline": 45,  # seconds before server marks node offline
@@ -52,9 +52,13 @@ DEFAULT_CONFIG: Dict[str, Any] = {
 
 # Maps OS environment variable name -> VientoConfig attribute name
 ENV_VAR_MAPPING: Dict[str, str] = {
+    "VIENTO_BOOTSTRAP_KEY": "bootstrap_key",
     "VIENTO_SERVER_URL": "server_url",
     "VIENTO_HTTP_URL": "http_url",
+    "VIENTO_MODEL_BACKEND": "model_backend",
     "VIENTO_OLLAMA_URL": "ollama_url",
+    "VIENTO_VLLM_URL": "vllm_url",
+    "VIENTO_LLAMACPP_URL": "llamacpp_url",
     "VIENTO_NODE_NAME": "node_name",
     "VIENTO_MAX_CONCURRENCY": "max_concurrency",
     "VIENTO_HEARTBEAT_INTERVAL": "heartbeat_interval",

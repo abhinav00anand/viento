@@ -91,6 +91,8 @@ class RuntimeState:
     # BUG-4 FIX: Added missing fields referenced by CLI status_command
     jobs_completed: int = 0
     jobs_failed: int = 0
+    pid: Optional[int] = None
+    process_name: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)

@@ -11,12 +11,12 @@
 
 ### ⚡ Ultra-Lightweight Distributed Edge Inference Mesh ⚡
 
-[![SDK](https://img.shields.io/badge/SDK-Viento%20v0.4.0-blue?style=for-the-badge&logo=python)](SDK)
+[![SDK](https://img.shields.io/badge/SDK-Viento%20v0.4.0-blue?style=for-the-badge&logo=python)](.)
 [![Live Production](https://img.shields.io/badge/Live%20Gateway-viento.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://viento.onrender.com)
 [![WebSocket](https://img.shields.io/badge/WebSocket%20Tunnel-wss%3A%2F%2Fviento.onrender.com-blue?style=for-the-badge&logo=websocket)](https://viento.onrender.com)
-[![Tests Passing](https://img.shields.io/badge/Tests-79%2F79%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](test_results/STRESS_TEST_REPORT.md)
+[![Tests Passing](https://img.shields.io/badge/Tests-82%2F82%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](tests)
 [![Hardware](https://img.shields.io/badge/GPU%20Validated-NVIDIA%20Tesla%20T4-76B900?style=for-the-badge&logo=nvidia)](assets/lightning_t4_gpu_test.png)
-[![Protocol](https://img.shields.io/badge/Protocol-Pydantic%20V2%20Canonical%201.0-orange?style=for-the-badge)](SDK/viento/protocol/envelope.py)
+[![Protocol](https://img.shields.io/badge/Protocol-Pydantic%20V2%20Canonical%201.0-orange?style=for-the-badge)](viento/protocol/envelope.py)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 <p align="center">
@@ -323,7 +323,7 @@ pip install -e .
 ollama run llama3:latest
 
 # 3. Connect your node to the live production mesh
-export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>  # Contact indrohelpdesk@gmail.com or set custom cluster key
+export VIENTO_BOOTSTRAP_KEY=<your-bootstrap-key>
 viento run --server wss://viento.onrender.com/ws/runtime
 
 # 4. Query the mesh via OpenAI SDK
@@ -336,19 +336,19 @@ curl https://viento.onrender.com/v1/models
 
 Viento includes an exhaustive automated test suite covering protocol invariants, network drops, session recovery, queue overflows, and concurrency stress:
 
-- **79 of 79 Unit & Stress Tests Passing (100%)**:
+- **82 of 82 Unit & Stress Tests Passing (100%)**:
   - `test_backends.py`: Backend adapter contracts & execution handles (7 passed)
   - `test_concurrency_stress.py`: Burst bounding, backpressure, rapid cancellation, zero token drop (5 passed)
   - `test_e2e_mesh_stress.py`: Pydantic V2 schema tampering defense & monotonic sequence validation (3 passed)
   - `test_ollama_adapter.py`: Stream token dispatch, health checks, model discovery (7 passed)
   - `test_protocol.py`: Wire serialization, deserialization, and payload invariants (26 passed)
   - `test_reconnection.py`: Reconnect handshake, session resync, and backoff (10 passed)
-  - `test_sdk.py`: CLI commands, configuration manager, and scheduler draining (9 passed)
+  - `test_sdk.py`: CLI commands, configuration manager, bootstrap key environment wiring, process management, and scheduler draining (12 passed)
   - `test_telemetry.py`: Non-blocking GPU metrics, thread-safe request counters, secret masking (12 passed)
 
 ```bash
 # Run the test suite locally
-pytest SDK/tests -v
+pytest tests/ -v
 ```
 
 ---

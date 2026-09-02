@@ -8,6 +8,7 @@ log tailing, version reporting, model weight pulling, and runtime shutdown.
 
 import asyncio
 import json
+import os
 import sys
 import time
 from typing import Any, Dict, Optional
@@ -30,6 +31,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from viento.backends import get_backend_adapter
+from viento.config.defaults import apply_env_overrides
 from viento.config.loader import ConfigManager, VientoConfig
 from viento.connection.manager import ConnectionManager
 from viento.scheduler.scheduler import JobScheduler
@@ -142,7 +144,16 @@ def logs_command(lines: int):
 # -----------------------------------------------------------------------------
 @cli.command("run")
 @click.option("--server", "-s", type=str, help="Override Viento WSS Cloud Gateway URL.")
+@click.option(
+    "--backend",
+    "-b",
+    type=click.Choice(["ollama", "vllm", "llamacpp"], case_sensitive=False),
+    default=None,
+    help="Inference backend engine (ollama, vllm, llamacpp).",
+)
 @click.option("--ollama-url", "-o", type=str, help="Override local Ollama API URL.")
+@click.option("--vllm-url", type=str, help="Override local vLLM API URL.")
+@click.option("--llamacpp-url", type=str, help="Override local llama.cpp API URL.")
 @click.option("--concurrency", "-c", type=int, help="Override maximum job concurrency.")
 @click.option("--bootstrap-key", "-k", type=str, help="Runtime bootstrap authentication key.")
 @click.option(
@@ -154,38 +165,69 @@ def logs_command(lines: int):
 )
 def run_command(
     server: Optional[str],
+    backend: Optional[str],
     ollama_url: Optional[str],
+    vllm_url: Optional[str],
+    llamacpp_url: Optional[str],
     concurrency: Optional[int],
     bootstrap_key: Optional[str],
     name: Optional[str],
 ):
     """Boot local runtime, connect to WSS gateway, perform handshake, and process jobs."""
+    # Centralized configuration loading with explicit precedence:
+    # CLI Flags > Environment Variables > Config File > Defaults
     cfg = config_mgr.load_config()
+    cfg = apply_env_overrides(cfg)
+
     if server:
         cfg.server_url = server
+    if backend:
+        cfg.model_backend = backend.lower()
     if ollama_url:
         cfg.ollama_url = ollama_url
+    if vllm_url:
+        cfg.vllm_url = vllm_url
+    if llamacpp_url:
+        cfg.llamacpp_url = llamacpp_url
     if concurrency:
         cfg.max_concurrency = concurrency
     if bootstrap_key:
         cfg.bootstrap_key = bootstrap_key
-    # BUG-17 FIX: Allow user to override node name from CLI
     if name:
         cfg.node_name = name
 
-    backend = get_backend_adapter(cfg.model_backend, base_url=cfg.ollama_url)
+    # Select endpoint URL matching the active backend
+    if cfg.model_backend == "vllm":
+        target_url = cfg.vllm_url
+    elif cfg.model_backend == "llamacpp":
+        target_url = cfg.llamacpp_url
+    else:
+        target_url = cfg.ollama_url
+
+    backend_adapter = get_backend_adapter(cfg.model_backend, base_url=target_url)
+
+    # Record process PID and started status for real process management
+    config_mgr.update_runtime_state(
+        status="running",
+        pid=os.getpid(),
+        uptime_start=time.time(),
+        process_name="viento",
+    )
 
     console.print(
         Panel.fit(
             "[bold cyan]⚡ VIENTO RUNTIME BOOTSTRAP[/bold cyan]\n"
             f"[dim]Server Gateway:[/dim] [yellow]{cfg.server_url}[/yellow]\n"
-            f"[dim]Backend Adapter:[/dim] [green]{backend.name()}[/green]\n"
-            f"[dim]Engine Endpoint:[/dim] [yellow]{cfg.ollama_url}[/yellow]\n"
+            f"[dim]Backend Adapter:[/dim] [green]{backend_adapter.name()}[/green]\n"
+            f"[dim]Engine Endpoint:[/dim] [yellow]{target_url}[/yellow]\n"
             f"[dim]Max Concurrency:[/dim] [green]{cfg.max_concurrency}[/green]\n"
-            f"[dim]Node Name:[/dim] [green]{cfg.node_name}[/green]",
+            f"[dim]Node Name:[/dim] [green]{cfg.node_name}[/green]\n"
+            f"[dim]Process PID:[/dim] [cyan]{os.getpid()}[/cyan]",
             border_style="cyan",
         )
     )
+
+    backend = backend_adapter
 
     conn_mgr = ConnectionManager(config=cfg, config_manager=config_mgr, backend=backend)
     scheduler = JobScheduler(
@@ -618,18 +660,60 @@ def pull_command(model: str):
 # Command: viento stop
 # -----------------------------------------------------------------------------
 @cli.command("stop")
-def stop_command():
-    """Gracefully drain active jobs, update runtime state, and stop node process."""
+@click.option("--force", "-f", is_flag=True, help="Force kill node process immediately (SIGKILL).")
+def stop_command(force: bool):
+    """Gracefully drain active jobs and terminate the running Viento node process."""
     state = config_mgr.load_runtime_state()
-    if state.status == "stopped":
-        console.print("[yellow]Viento runtime node is already stopped.[/yellow]")
+    pid = state.pid
+
+    if not pid:
+        console.print("[yellow]No active Viento process PID found in runtime state.[/yellow]")
+        config_mgr.update_runtime_state(status="stopped", active_api_key=None, pid=None)
         return
 
-    console.print(
-        "[bold yellow]Draining active jobs and sending disconnect signal...[/bold yellow]"
-    )
-    config_mgr.update_runtime_state(status="stopped", active_api_key=None, key_expires_at=None)
-    console.print("[bold green]✔ Viento runtime node gracefully stopped.[/bold green]")
+    # Validate process identity before terminating to protect against PID reuse
+    proc_alive = False
+    proc_obj = None
+    try:
+        proc_obj = psutil.Process(pid)
+        if proc_obj.is_running() and proc_obj.status() != psutil.STATUS_ZOMBIE:
+            cmdline = " ".join(proc_obj.cmdline()).lower()
+            name = proc_obj.name().lower()
+            # Must match python/viento to ensure we don't kill an unrelated recycled PID
+            if "viento" in cmdline or "python" in name or "viento" in name:
+                proc_alive = True
+            else:
+                console.print(
+                    f"[yellow]PID {pid} exists but does not match Viento identity ({name}). Skipping termination.[/yellow]"
+                )
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        proc_alive = False
+
+    if not proc_alive:
+        console.print(
+            f"[yellow]Viento node process (PID {pid}) is not running. Resetting state to stopped.[/yellow]"
+        )
+        config_mgr.update_runtime_state(status="stopped", active_api_key=None, pid=None)
+        return
+
+    console.print(f"[bold yellow]Stopping Viento node process (PID {pid})...[/bold yellow]")
+    try:
+        if force:
+            proc_obj.kill()
+        else:
+            proc_obj.terminate()
+            try:
+                proc_obj.wait(timeout=5.0)
+            except psutil.TimeoutExpired:
+                console.print(
+                    "[yellow]Process did not terminate within 5s, terminating forcefully...[/yellow]"
+                )
+                proc_obj.kill()
+        console.print("[bold green]✔ Viento runtime node successfully stopped.[/bold green]")
+    except Exception as exc:
+        console.print(f"[bold red]Failed to stop process {pid}: {exc}[/bold red]")
+    finally:
+        config_mgr.update_runtime_state(status="stopped", active_api_key=None, pid=None)
 
 
 if __name__ == "__main__":
