@@ -11,6 +11,7 @@
 
 ### ⚡ Ultra-Lightweight Distributed Edge Inference Mesh ⚡
 
+[![SDK](https://img.shields.io/badge/SDK-Viento%20v0.4.0-blue?style=for-the-badge&logo=python)](SDK)
 [![Live Production](https://img.shields.io/badge/Live%20Gateway-viento.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://viento.onrender.com)
 [![WebSocket](https://img.shields.io/badge/WebSocket%20Tunnel-wss%3A%2F%2Fviento.onrender.com-blue?style=for-the-badge&logo=websocket)](https://viento.onrender.com)
 [![Tests Passing](https://img.shields.io/badge/Tests-79%2F79%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](test_results/STRESS_TEST_REPORT.md)
@@ -19,7 +20,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blueviolet?style=for-the-badge)](LICENSE)
 
 <p align="center">
-  <b>Transform heterogeneous local workstations, cloud GPUs, and edge rigs into a unified, high-throughput, OpenAI-compatible AI inference cloud.</b>
+  <b>Zephyr</b> is the distributed AI inference mesh, powered by the featherweight <b>Viento SDK</b> (<code>pip install -e SDK/</code> • CLI: <code>viento</code>).<br>
+  Transform heterogeneous local workstations, cloud GPUs, and edge rigs into a unified, high-throughput, OpenAI-compatible AI cloud.
 </p>
 
 [🌐 Live Mesh Gateway](https://viento.onrender.com) • [📖 Detailed How-to-Run Guide](HOW_TO_RUN.md) • [📊 Stress Test Reports](test_results/STRESS_TEST_REPORT.md) • [⚡ Lightning AI GPU Benchmarks](#-cloud-gpu-validation-nvidia-tesla-t4)
