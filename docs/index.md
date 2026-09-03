@@ -1,7 +1,5 @@
 # Viento Documentation
 
-<div align="center">
-
 ### ⚡ Ultra-Lightweight Distributed Edge Inference Mesh ⚡
 
 [![PyPI](https://img.shields.io/pypi/v/viento.svg?color=blue)](https://pypi.org/project/viento/)
@@ -9,8 +7,6 @@
 [![Python](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://pypi.org/project/viento/)
 
 **Viento** is an ultra-lightweight distributed AI inference mesh that bridges local and cloud GPU/CPU compute (Ollama, vLLM, llama.cpp) with an OpenAI-compatible API gateway.
-
-</div>
 
 ---
 
