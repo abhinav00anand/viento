@@ -12,6 +12,7 @@
 ### ⚡ Ultra-Lightweight Distributed Edge Inference Mesh ⚡
 
 [![SDK](https://img.shields.io/badge/SDK-Viento%20v0.4.0-blue?style=for-the-badge&logo=python)](.)
+[![Docs](https://img.shields.io/badge/Docs-Read%20the%20Docs-blue?style=for-the-badge&logo=read-the-docs)](https://viento.readthedocs.io/en/latest/)
 [![Live Production](https://img.shields.io/badge/Live%20Gateway-viento.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://viento.onrender.com)
 [![WebSocket](https://img.shields.io/badge/WebSocket%20Tunnel-wss%3A%2F%2Fviento.onrender.com-blue?style=for-the-badge&logo=websocket)](https://viento.onrender.com)
 [![Tests Passing](https://img.shields.io/badge/Tests-82%2F82%20Passed%20(100%25)-success?style=for-the-badge&logo=pytest)](tests)
@@ -24,7 +25,7 @@
   Transform heterogeneous local workstations, cloud GPUs, and edge rigs into a unified, high-throughput, OpenAI-compatible AI cloud.
 </p>
 
-[🌐 Live Mesh Gateway](https://viento.onrender.com) • [📖 Detailed How-to-Run Guide](HOW_TO_RUN.md) • [📊 Stress Test Reports](test_results/STRESS_TEST_REPORT.md) • [⚡ Lightning AI GPU Benchmarks](#-cloud-gpu-validation-nvidia-tesla-t4)
+[📚 Read the Docs](https://viento.readthedocs.io/en/latest/) • [🌐 Live Mesh Gateway](https://viento.onrender.com) • [📖 Detailed How-to-Run Guide](HOW_TO_RUN.md) • [📊 Stress Test Reports](test_results/STRESS_TEST_REPORT.md) • [⚡ Lightning AI GPU Benchmarks](#-cloud-gpu-validation-nvidia-tesla-t4)
 
 ---
 

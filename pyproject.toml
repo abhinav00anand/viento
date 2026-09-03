@@ -67,7 +67,7 @@ docs = [
 
 [project.urls]
 Homepage = "https://github.com/abhinav00anand/viento"
-Documentation = "https://github.com/abhinav00anand/viento/tree/main/docs"
+Documentation = "https://viento.readthedocs.io/en/latest/"
 Repository = "https://github.com/abhinav00anand/viento"
 "Bug Tracker" = "https://github.com/abhinav00anand/viento/issues"
 Changelog = "https://github.com/abhinav00anand/viento/blob/main/CHANGELOG.md"
